@@ -1,0 +1,355 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_ONLINE")
+}
+
+enum UserRole {
+  super_admin
+  admin_compagnie
+  admin_filiale
+  auditeur
+  lecteur
+}
+
+enum ImportStatus {
+  importe
+  en_analyse
+  analyse
+  valide
+  rejete
+}
+
+enum SessionType {
+  mono_mois
+  multi_mois
+  exercice_complet
+}
+
+enum SessionStatus {
+  en_cours
+  complete
+  archivee
+}
+
+enum Gravite {
+  critique
+  eleve
+  moyen
+  faible
+}
+
+enum CategorieAnomalie {
+  INTEGRITE
+  BENEFICIAIRE
+  PRESTATAIRE
+  DOUBLON
+  FREQUENCE
+  MONTANT
+  ACTE
+  TEMPOREL
+  CONTRACTUEL
+  STATISTIQUE
+}
+
+model Compagnie {
+  id            Int              @id @default(autoincrement())
+  code          String           @unique @db.VarChar(20)
+  nom           String           @db.VarChar(200)
+  adresse       String?          @db.Text
+  ville         String?          @db.VarChar(100)
+  telephone     String?          @db.VarChar(50)
+  email         String?          @db.VarChar(100)
+  actif         Boolean          @default(true)
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  filiales      Filiale[]
+  gestionnaires Gestionnaire[]
+  utilisateurs  Utilisateur[]
+  fichiers      FichierImporte[]
+  refContrats   RefContrat[]
+  refPlafonds   RefPlafond[]
+
+  @@map("compagnies")
+}
+
+model Filiale {
+  id           Int              @id @default(autoincrement())
+  compagnieId  Int              @map("compagnie_id")
+  code         String           @db.VarChar(20)
+  nom          String           @db.VarChar(200)
+  ville        String?          @db.VarChar(100)
+  adresse      String?          @db.Text
+  telephone    String?          @db.VarChar(50)
+  email        String?          @db.VarChar(100)
+  actif        Boolean          @default(true)
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  compagnie    Compagnie        @relation(fields: [compagnieId], references: [id])
+  utilisateurs Utilisateur[]
+  fichiers     FichierImporte[]
+
+  @@unique([code, compagnieId])
+  @@map("filiales")
+}
+
+model Gestionnaire {
+  id          Int              @id @default(autoincrement())
+  compagnieId Int              @map("compagnie_id")
+  code        String           @unique @db.VarChar(20)
+  nom         String           @db.VarChar(200)
+  prenoms     String?          @db.VarChar(200)
+  contact     String?          @db.VarChar(150)
+  telephone   String?          @db.VarChar(50)
+  email       String?          @db.VarChar(100)
+  actif       Boolean          @default(true)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  compagnie   Compagnie        @relation(fields: [compagnieId], references: [id])
+  fichiers    FichierImporte[]
+
+  @@map("gestionnaires")
+}
+
+model ExerciceComptable {
+  id           Int              @id @default(autoincrement())
+  compagnieId  Int              @map("compagnie_id")
+  codeExercice String           @map("code_exercice") @db.VarChar(20)
+  dateDebut    DateTime         @map("date_debut") @db.Date
+  dateFin      DateTime         @map("date_fin") @db.Date
+  dateDebutToleranceTardif DateTime? @map("date_debut_tolerance_tardif") @db.Date
+  dateFinToleranceTardif   DateTime? @map("date_fin_tolerance_tardif") @db.Date
+  actif        Boolean          @default(true)
+  fichiers     FichierImporte[]
+
+  @@map("exercices_comptables")
+}
+
+model Utilisateur {
+  id                Int       @id @default(autoincrement())
+  compagnieId       Int       @map("compagnie_id")
+  filialeId         Int?      @map("filiale_id")
+  nom               String    @db.VarChar(100)
+  prenoms           String?   @db.VarChar(150)
+  email             String    @unique @db.VarChar(150)
+  motDePasse        String    @map("mot_de_passe") @db.VarChar(255)
+  role              UserRole  @default(auditeur)
+  actif             Boolean   @default(true)
+  derniereConnexion DateTime? @map("derniere_connexion")
+  refreshToken      String?   @map("refresh_token") @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  compagnie         Compagnie @relation(fields: [compagnieId], references: [id])
+  filiale           Filiale?  @relation(fields: [filialeId], references: [id])
+
+  @@map("utilisateurs")
+}
+
+model FichierImporte {
+  id                   Int               @id @default(autoincrement())
+  compagnieId          Int               @map("compagnie_id")
+  filialeId            Int               @map("filiale_id")
+  gestionnaireId       Int               @map("gestionnaire_id")
+  exerciceId           Int               @map("exercice_id")
+  moisFichier          Int               @map("mois_fichier")
+  anneeFichier         Int               @map("annee_fichier")
+  nomFichier           String            @map("nom_fichier") @db.VarChar(255)
+  tailleFichier        BigInt?           @map("taille_fichier")
+  nbLignesTotal        Int               @default(0) @map("nb_lignes_total")
+  nbLignesValides      Int               @default(0) @map("nb_lignes_valides")
+  nbLignesAnomalies    Int               @default(0) @map("nb_lignes_anomalies")
+  nbLignesTardives     Int               @default(0) @map("nb_lignes_tardives")
+  nbDoublons           Int               @default(0) @map("nb_doublons")
+  montantTotalReclame  Decimal           @default(0) @map("montant_total_reclame") @db.Decimal(15, 2)
+  montantNetRecommande Decimal           @default(0) @map("montant_net_recommande") @db.Decimal(15, 2)
+  tauxAnomalie         Decimal           @default(0) @map("taux_anomalie") @db.Decimal(5, 2)
+  statut               ImportStatus      @default(importe)
+  dateImport           DateTime          @default(now()) @map("date_import")
+  compagnie            Compagnie         @relation(fields: [compagnieId], references: [id])
+  filiale              Filiale           @relation(fields: [filialeId], references: [id])
+  gestionnaire         Gestionnaire      @relation(fields: [gestionnaireId], references: [id])
+  exercice             ExerciceComptable @relation(fields: [exerciceId], references: [id])
+  prestations          Prestation[]
+  anomalies            Anomalie[]
+
+  @@map("fichiers_importes")
+}
+
+model Prestation {
+  id                        BigInt         @id @default(autoincrement())
+  fichierImporteId          Int            @map("fichier_importe_id")
+  compagnieId               Int            @map("compagnie_id")
+  filialeId                 Int            @map("filiale_id")
+  gestionnaireId            Int            @map("gestionnaire_id")
+  exerciceId                Int            @map("exercice_id")
+  numeroPrestation          String?        @map("numero_prestation") @db.VarChar(100)
+  codeSouscripteur          String?        @map("code_souscripteur") @db.VarChar(50)
+  souscripteur              String?        @db.VarChar(200)
+  dateSoins                 DateTime?      @map("date_soins") @db.Date
+  dateComptable             DateTime?      @map("date_comptable")
+  codeAffection             String?        @map("code_affection") @db.VarChar(50)
+  affection                 String?        @db.VarChar(200)
+  codeFamillePrestation     String?        @map("code_famille_prestation") @db.VarChar(50)
+  famillePrestation         String?        @map("famille_prestation") @db.VarChar(200)
+  codeActe                  String?        @map("code_acte") @db.VarChar(50)
+  acte                      String?        @db.VarChar(200)
+  codePrescripteur          String?        @map("code_prescripteur") @db.VarChar(50)
+  prescripteur              String?        @db.VarChar(200)
+  codePrestataire           String?        @map("code_prestataire") @db.VarChar(50)
+  prestataire               String?        @db.VarChar(200)
+  matriculeAssurePrincipal  String?        @map("matricule_assure_principal") @db.VarChar(50)
+  nomAssurePrincipal        String?        @map("nom_assure_principal") @db.VarChar(150)
+  prenomsAssurePrincipal    String?        @map("prenoms_assure_principal") @db.VarChar(150)
+  matriculeBeneficiaire     String?        @map("matricule_beneficiaire") @db.VarChar(50)
+  nomBeneficiaire           String?        @map("nom_beneficiaire") @db.VarChar(150)
+  prenomsBeneficiaire       String?        @map("prenoms_beneficiaire") @db.VarChar(150)
+  statutBeneficiaire        String?        @map("statut_beneficiaire") @db.VarChar(50)
+  dateNaissanceBeneficiaire DateTime?      @map("date_naissance_beneficiaire") @db.Date
+  police                    String?        @db.VarChar(100)
+  policeInterne             String?        @map("police_interne") @db.VarChar(100)
+  numeroCollege             String?        @map("numero_college") @db.VarChar(50)
+  college                   String?        @db.VarChar(150)
+  montantReclame            Decimal        @default(0) @map("montant_reclame") @db.Decimal(15, 2)
+  montantExclu              Decimal        @default(0) @map("montant_exclu") @db.Decimal(15, 2)
+  baseRemboursement         Decimal        @default(0) @map("base_remboursement") @db.Decimal(15, 2)
+  ticketModerateur          Decimal        @default(0) @map("ticket_moderateur") @db.Decimal(15, 2)
+  montantTicketModerateur   Decimal        @default(0) @map("montant_ticket_moderateur") @db.Decimal(15, 2)
+  montantPaye               Decimal        @default(0) @map("montant_paye") @db.Decimal(15, 2)
+  codeExercice              String?        @map("code_exercice") @db.VarChar(20)
+  debutExercice             DateTime?      @map("debut_exercice") @db.Date
+  finExercice               DateTime?      @map("fin_exercice") @db.Date
+  moisFichier               Int?           @map("mois_fichier")
+  codeGestionnaire          String?        @map("code_gestionnaire") @db.VarChar(20)
+  codeFiliale               String?        @map("code_filiale") @db.VarChar(20)
+  estValide                 Boolean        @default(true) @map("est_valide")
+  estTardive                Boolean        @default(false) @map("est_tardive")
+  estRejetee                Boolean        @default(false) @map("est_rejetee")
+  nbAnomalies               Int            @default(0) @map("nb_anomalies")
+  createdAt                 DateTime       @default(now()) @map("created_at")
+  fichier                   FichierImporte @relation(fields: [fichierImporteId], references: [id])
+  anomalies                 Anomalie[]
+
+  @@map("prestations")
+}
+
+model Anomalie {
+  id               BigInt            @id @default(autoincrement())
+  prestationId     BigInt?           @map("prestation_id")
+  fichierImporteId Int               @map("fichier_importe_id")
+  sessionAuditId   Int?              @map("session_audit_id")
+  compagnieId      Int               @map("compagnie_id")
+  filialeId        Int               @map("filiale_id")
+  categorie        CategorieAnomalie
+  codeAnomalie     String            @map("code_anomalie") @db.VarChar(60)
+  description      String?           @db.Text
+  gravite          Gravite
+  montantImpacte   Decimal           @default(0) @map("montant_impacte") @db.Decimal(15, 2)
+  matriculeBenef   String?           @map("matricule_benef") @db.VarChar(50)
+  nomBenef         String?           @map("nom_benef") @db.VarChar(150)
+  dateDetection    DateTime          @default(now()) @map("date_detection")
+  fichier          FichierImporte    @relation(fields: [fichierImporteId], references: [id])
+  prestation       Prestation?       @relation(fields: [prestationId], references: [id])
+
+  @@map("anomalies")
+}
+
+model RefAssure {
+  id                        Int       @id @default(autoincrement())
+  compagnieId               Int       @map("compagnie_id")
+  matricule                 String    @db.VarChar(50)
+  nom                       String    @db.VarChar(150)
+  prenom                    String?   @db.VarChar(150)
+  dateNaissance             DateTime? @map("date_naissance") @db.Date
+  sexe                      String?   @db.VarChar(10)
+  statut                    String?   @db.VarChar(50)
+  dateAffiliation           DateTime? @map("date_affiliation") @db.Date
+  dateRadiation             DateTime? @map("date_radiation") @db.Date
+  dateFinDroit              DateTime? @map("date_fin_droit") @db.Date
+  codeSouscripteur          String?   @map("code_souscripteur") @db.VarChar(50)
+  souscripteur              String?   @db.VarChar(200)
+  numeroGroupe              String?   @map("numero_groupe") @db.VarChar(50)
+  matriculeAssurePrincipal  String?   @map("matricule_assure_principal") @db.VarChar(50)
+  nomAssurePrincipal        String?   @map("nom_assure_principal") @db.VarChar(150)
+  prenomsAssurePrincipal    String?   @map("prenoms_assure_principal") @db.VarChar(150)
+  police                    String?   @db.VarChar(100)
+  policeInterne             String?   @map("police_interne") @db.VarChar(100)
+  numeroCollege             String?   @map("numero_college") @db.VarChar(50)
+  college                   String?   @db.VarChar(150)
+  actif                     Boolean   @default(true)
+
+  @@unique([matricule, compagnieId])
+  @@index([compagnieId, matricule, police, policeInterne, numeroCollege, codeSouscripteur], map: "idx_ref_assures_cle_prestation")
+  @@index([compagnieId, matriculeAssurePrincipal], map: "idx_ref_assures_assure_principal")
+  @@map("ref_assures")
+}
+
+model RefPrestataire {
+  id          Int     @id @default(autoincrement())
+  compagnieId Int     @map("compagnie_id")
+  code        String  @db.VarChar(50)
+  nom         String  @db.VarChar(200)
+  statut      String  @default("agree") @db.VarChar(20)
+  actif       Boolean @default(true)
+
+  @@unique([code, compagnieId])
+  @@map("ref_prestataires")
+}
+
+model RefActe {
+  id                Int     @id @default(autoincrement())
+  compagnieId       Int     @map("compagnie_id")
+  codeActe          String  @map("code_acte") @db.VarChar(50)
+  libelle           String  @db.VarChar(200)
+  famille           String? @db.VarChar(100)
+  tarifConventionne Decimal @default(0) @map("tarif_conventionne") @db.Decimal(15, 2)
+  couvert           Boolean @default(true)
+  actif             Boolean @default(true)
+
+  @@unique([codeActe, compagnieId])
+  @@map("ref_actes")
+}
+
+model RefContrat {
+  id             Int       @id @default(autoincrement())
+  compagnieId    Int       @map("compagnie_id")
+  codeContrat    String    @map("code_contrat") @db.VarChar(50)
+  libelle        String    @db.VarChar(200)
+  police         String?   @db.VarChar(100)
+  policeInterne  String?   @map("police_interne") @db.VarChar(100)
+  codeSouscripteur String? @map("code_souscripteur") @db.VarChar(50)
+  souscripteur   String?   @db.VarChar(200)
+  dateDebut      DateTime? @map("date_debut") @db.Date
+  dateFin        DateTime? @map("date_fin") @db.Date
+  actif          Boolean   @default(true)
+  compagnie      Compagnie @relation(fields: [compagnieId], references: [id])
+  plafonds       RefPlafond[]
+
+  @@unique([codeContrat, compagnieId])
+  @@index([compagnieId, police, policeInterne, codeSouscripteur], map: "idx_ref_contrats_perimetre")
+  @@map("ref_contrats")
+}
+
+model RefPlafond {
+  id              Int       @id @default(autoincrement())
+  compagnieId     Int       @map("compagnie_id")
+  contratId       Int?      @map("contrat_id")
+  codePlafond     String    @map("code_plafond") @db.VarChar(50)
+  libelle         String    @db.VarChar(200)
+  typePlafond     String    @map("type_plafond") @db.VarChar(50)
+  police          String?   @db.VarChar(100)
+  numeroCollege   String?   @map("numero_college") @db.VarChar(50)
+  codeActe        String?   @map("code_acte") @db.VarChar(50)
+  famille         String?   @db.VarChar(100)
+  montantPlafond  Decimal   @default(0) @map("montant_plafond") @db.Decimal(15, 2)
+  periodicite     String?   @db.VarChar(50)
+  actif           Boolean   @default(true)
+  compagnie       Compagnie @relation(fields: [compagnieId], references: [id])
+  contrat         RefContrat? @relation(fields: [contratId], references: [id])
+
+  @@unique([codePlafond, compagnieId])
+  @@index([compagnieId, police, numeroCollege, codeActe, famille], map: "idx_ref_plafonds_regle")
+  @@map("ref_plafonds")
+}

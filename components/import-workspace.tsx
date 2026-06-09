@@ -19,6 +19,7 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
+import { notifyToast } from "@/components/toaster";
 
 type RecentFile = {
   id: number;
@@ -502,11 +503,12 @@ export function ImportWorkspace({
       if (!response.ok)
         throw new Error(result.error ?? "L'importation a échoué.");
       setImportResult(result);
+      notifyToast("success", "Importation terminée et audit lancé avec succès.");
       setStep(3);
     } catch (error) {
-      setImportError(
-        error instanceof Error ? error.message : "L'importation a échoué.",
-      );
+      const message = error instanceof Error ? error.message : "L'importation a échoué.";
+      setImportError(message);
+      notifyToast("error", message);
     } finally {
       setImporting(false);
     }

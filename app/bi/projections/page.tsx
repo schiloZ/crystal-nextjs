@@ -1,21 +1,18 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { getBiData } from "@/lib/bi-data";
+import { getCurrentUser } from "@/lib/current-user";
 
-const kpis = [
-  { icon: "PF", value: "3.12G F", label: "Projection fin année", sub: "FCFA estimé", color: "#d97706" },
-  { icon: "EA", value: "2.88G F", label: "Budget annuel", sub: "Enveloppe annuelle", color: "#10285a" },
-  { icon: "DP", value: "+8.3%", label: "Dépassement prévu", sub: "si rythme actuel", color: "#dc2626" },
-  { icon: "MC", value: "Septembre", label: "Mois critique prévu", sub: "Dépassement", color: "#d97706" },
-];
+type Kpi = { icon: string; value: string; label: string; sub: string; color: string };
+type ProjectionPoint = { name: string; value: number; projected: boolean };
 
-const recommendations = [
-  ["URGENT", "Negocier revision budgetaire +8.3% avec direction technique", "bg-red-600"],
-  ["ATTENTION", "Renforcer controles sur MEDIASSUR (+12% sur 5 mois consecutifs)", "bg-orange-600"],
-  ["INFO", "Septembre et octobre sont des pics de consommation historiques", "bg-sky"],
-  ["POSITIF", "Taux fraude en baisse continue : de 11.2% a 8.7% en 5 mois", "bg-emerald-600"],
-];
+function formatMoneyShort(value: number) {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}G F`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M F`;
+  return `${Math.round(value).toLocaleString("fr-FR")} F`;
+}
 
-function KpiCard({ item }: { item: typeof kpis[number] }) {
+function KpiCard({ item }: { item: Kpi }) {
   return <article className="relative overflow-hidden rounded-lg border border-[#d9edf7] bg-white p-5 shadow-soft">
     <div className="mb-4 grid h-14 w-14 place-items-center rounded-full text-sm font-black text-white" style={{ backgroundColor: item.color }}>{item.icon}</div>
     <h3 className="text-4xl font-black leading-none text-navy">{item.value}</h3>
@@ -25,33 +22,74 @@ function KpiCard({ item }: { item: typeof kpis[number] }) {
   </article>
 }
 
-function ProjectionChart() {
-  const real: Array<[number, number, string]> = [
-    [30, 92, "248"], [150, 70, "265"], [270, 87, "252"], [390, 58, "271"], [510, 91, "248"],
-  ];
-  const proj: Array<[number, number, string]> = [
-    [610, 55, "~280"], [735, 48, "~290"], [855, 50, "~285"], [975, 43, "~295"], [1095, 36, "~305"], [1215, 41, "~298"], [1335, 29, "~310"],
-  ];
+function ProjectionChart({ year, points, annualBudget }: { year: number; points: ProjectionPoint[]; annualBudget: number }) {
+  const monthlyBudgetM = annualBudget / 12 / 1_000_000;
+  const maxValue = Math.max(monthlyBudgetM, ...points.map((point) => point.value), 1);
+  const xFor = (index: number) => 30 + index * 119;
+  const yFor = (value: number) => 205 - (value / maxValue) * 165;
+  const real = points.map((point, index) => ({ ...point, index })).filter((point) => !point.projected);
+  const projected = points.map((point, index) => ({ ...point, index })).filter((point) => point.projected);
+  const realPolyline = real.map((point) => `${xFor(point.index)},${yFor(point.value)}`).join(" ");
+  const projectedSeed = real.length ? real[real.length - 1] : null;
+  const projectedPolyline = [
+    ...(projectedSeed ? [`${xFor(projectedSeed.index)},${yFor(projectedSeed.value)}`] : []),
+    ...projected.map((point) => `${xFor(point.index)},${yFor(point.value)}`),
+  ].join(" ");
+  const budgetY = yFor(monthlyBudgetM);
+
   return <section className="card p-4">
-    <h2 className="font-black text-navy">Projection consommation annuelle 2026 — NSIA CI (M FCFA)</h2>
+    <h2 className="font-black text-navy">Projection consommation annuelle {year} (M FCFA)</h2>
     <div className="mt-2 flex gap-8 text-sm font-semibold">
       <span><i className="inline-block h-4 w-5 bg-sky"/> Donnees reelles</span>
       <span><i className="inline-block h-4 w-5 bg-orange-600"/> Projection</span>
     </div>
-    <svg viewBox="0 0 1380 240" className="mt-2 h-64 w-full rounded bg-white">
-      <rect x="590" y="0" width="765" height="220" fill="#fff6ec"/>
-      <line x1="20" y1="80" x2="1350" y2="80" stroke="#ef4444" strokeDasharray="8 8" strokeWidth="3"/>
-      <text x="1280" y="70" fill="#dc2626" fontSize="13" fontWeight="900">Budget 240M</text>
-      <polyline points={real.map(([x,y]) => `${x},${y}`).join(" ")} fill="none" stroke="#21b5f5" strokeWidth="4"/>
-      <polyline points={proj.map(([x,y]) => `${x},${y}`).join(" ")} fill="none" stroke="#ea580c" strokeWidth="4" strokeDasharray="8 8"/>
-      {real.map(([x,y,label]) => <g key={`r-${x}`}><circle cx={x} cy={y} r="6" fill="#21b5f5"/><text x={x - 14} y={y - 14} fill="#0284c7" fontSize="13" fontWeight="900">{label}</text></g>)}
-      {proj.map(([x,y,label]) => <g key={`p-${x}`}><circle cx={x} cy={y} r="6" fill="#ea580c"/><text x={x - 18} y={y - 14} fill="#ea580c" fontSize="13" fontWeight="900">{label}</text></g>)}
-      {["Jan","Fev","Mar","Avr","Mai","Juin","Juil","Aou","Sep","Oct","Nov","Dec"].map((m, i) => <text key={m} x={30 + i * 119} y="232" fill="#64748b" fontSize="12">{m}</text>)}
+    <svg viewBox="0 0 1380 250" className="mt-2 h-64 w-full rounded bg-white">
+      <rect x={projected.length ? xFor(projected[0].index) - 20 : 1360} y="0" width="765" height="222" fill="#fff6ec"/>
+      <line x1="20" y1={budgetY} x2="1350" y2={budgetY} stroke="#ef4444" strokeDasharray="8 8" strokeWidth="3"/>
+      <text x="1210" y={Math.max(18, budgetY - 10)} fill="#dc2626" fontSize="13" fontWeight="900">Budget mensuel {Math.round(monthlyBudgetM)}M</text>
+      {realPolyline ? <polyline points={realPolyline} fill="none" stroke="#21b5f5" strokeWidth="4"/> : null}
+      {projectedPolyline ? <polyline points={projectedPolyline} fill="none" stroke="#ea580c" strokeWidth="4" strokeDasharray="8 8"/> : null}
+      {real.map((point) => <g key={`r-${point.name}`}><circle cx={xFor(point.index)} cy={yFor(point.value)} r="6" fill="#21b5f5"/><text x={xFor(point.index) - 14} y={yFor(point.value) - 14} fill="#0284c7" fontSize="13" fontWeight="900">{Math.round(point.value)}</text></g>)}
+      {projected.map((point) => <g key={`p-${point.name}`}><circle cx={xFor(point.index)} cy={yFor(point.value)} r="6" fill="#ea580c"/><text x={xFor(point.index) - 18} y={yFor(point.value) - 14} fill="#ea580c" fontSize="13" fontWeight="900">~{Math.round(point.value)}</text></g>)}
+      {points.map((point, index) => <text key={point.name} x={xFor(index)} y="238" fill="#64748b" fontSize="12">{point.name}</text>)}
     </svg>
   </section>
 }
 
-export default function Page() {
+export default async function Page() {
+  const user = await getCurrentUser();
+  const data = await getBiData(user);
+  const realMonths = data.monthly.filter((month) => month.amount > 0);
+  const lastRealMonth = realMonths.at(-1)?.month ?? 0;
+  const monthlyAverage = realMonths.length ? realMonths.reduce((sum, month) => sum + month.amount, 0) / realMonths.length : 0;
+  const projectedAnnual = monthlyAverage * 12;
+  const annualBudget = data.yearRecommended > 0 ? data.yearRecommended : Math.max(data.yearClaimed * 0.92, projectedAnnual * 0.92);
+  const gapPercent = annualBudget ? ((projectedAnnual - annualBudget) / annualBudget) * 100 : 0;
+  let cumulative = 0;
+  let criticalMonth = "Non prevu";
+  const points = data.monthly.map((month) => {
+    const projected = month.month > lastRealMonth;
+    const amount = projected ? monthlyAverage : month.amount;
+    cumulative += amount;
+    if (criticalMonth === "Non prevu" && annualBudget > 0 && cumulative > annualBudget) criticalMonth = month.name;
+    return { name: month.name, value: Math.round(amount / 1_000_000), projected };
+  });
+  const trendLabel = gapPercent > 0 ? `+${gapPercent.toFixed(1)}%` : `${gapPercent.toFixed(1)}%`;
+  const trendColor = gapPercent > 0 ? "#dc2626" : "#059669";
+  const kpis: Kpi[] = [
+    { icon: "PF", value: formatMoneyShort(projectedAnnual), label: "Projection fin annee", sub: "FCFA estime", color: "#d97706" },
+    { icon: "EA", value: formatMoneyShort(annualBudget), label: "Budget annuel", sub: "Base recommandee", color: "#10285a" },
+    { icon: "DP", value: trendLabel, label: gapPercent > 0 ? "Depassement prevu" : "Marge prevue", sub: "si rythme actuel", color: trendColor },
+    { icon: "MC", value: criticalMonth, label: "Mois critique prevu", sub: "Depassement", color: "#d97706" },
+  ];
+  const topManager = data.managers[0];
+  const recommendations = [
+    [gapPercent > 0 ? "URGENT" : "INFO", gapPercent > 0 ? `Prevoir une revision budgetaire de ${trendLabel} pour ${data.selectedYear}` : `La trajectoire reste sous le budget de ${Math.abs(gapPercent).toFixed(1)}%`, gapPercent > 0 ? "bg-red-600" : "bg-sky"],
+    ["ATTENTION", topManager ? `Surveiller ${topManager.name}, premier gestionnaire en consommation` : "Importer des fichiers pour identifier les gestionnaires sensibles", "bg-orange-600"],
+    ["INFO", `${realMonths.length} mois reel(s) utilise(s) pour calculer la projection`, "bg-sky"],
+    ["POSITIF", `Taux anomalies actuel: ${data.yearAnomalyRate.toFixed(1)}% sur l'exercice`, "bg-emerald-600"],
+  ] as const;
+
   return <AppShell title="Projections et Previsions — BI-05" subtitle="BI & Analytics / Projections">
     <div className="mb-4 flex gap-2 text-sm font-black">
       <Link href="/bi" className="rounded-md bg-white px-5 py-3 text-slate-500">Dashboard</Link>
@@ -61,15 +99,15 @@ export default function Page() {
     </div>
 
     <section className="mb-5 rounded-lg border-l-8 border-orange-500 bg-yellow-100 px-5 py-4">
-      <h2 className="text-xl font-black text-orange-600">ALERTE DEPASSEMENT PREVISIONNEL — NSIA CI</h2>
-      <p className="mt-1 text-sm font-semibold text-slate-700">Sur trajectoire actuelle l'enveloppe annuelle sera depassee de 8.3% avant fin septembre 2026.</p>
+      <h2 className="text-xl font-black text-orange-600">{gapPercent > 0 ? "ALERTE DEPASSEMENT PREVISIONNEL" : "SUIVI PREVISIONNEL MAITRISE"} — {data.companyLabel}</h2>
+      <p className="mt-1 text-sm font-semibold text-slate-700">Sur trajectoire actuelle, l'exercice {data.selectedYear} est estime a {formatMoneyShort(projectedAnnual)} pour un budget de {formatMoneyShort(annualBudget)}.</p>
     </section>
 
     <div className="mb-5 grid grid-cols-4 gap-4">
       {kpis.map((item) => <KpiCard key={item.icon} item={item}/>)}
     </div>
 
-    <ProjectionChart/>
+    <ProjectionChart year={data.selectedYear} points={points} annualBudget={annualBudget}/>
 
     <section className="mt-2">
       <h2 className="mb-3 text-lg font-black text-navy">Recommandations previsionnelles</h2>

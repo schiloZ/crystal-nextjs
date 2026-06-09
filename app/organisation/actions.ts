@@ -3,8 +3,9 @@
 import bcrypt from "bcryptjs";
 import { UserRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getCurrentUser, requireRole } from "@/lib/current-user";
+import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 const branchSchema = z.object({
@@ -24,24 +25,24 @@ const userSchema = z.object({
 });
 
 export async function createBranch(formData: FormData) {
-  const user = await requireRole(["super_admin", "admin_compagnie"]);
+  await requireRole(["super_admin"]);
   const values = branchSchema.parse(Object.fromEntries(formData));
   const requestedCompanyId = Number(formData.get("compagnieId"));
-  const compagnieId = user.role === "super_admin" ? requestedCompanyId : user.compagnieId;
+  const compagnieId = requestedCompanyId;
   if (!compagnieId) throw new Error("Compagnie invalide");
 
   await prisma.filiale.create({
     data: { compagnieId, code: values.code, nom: values.nom, ville: values.ville || null, email: values.email || null },
   });
   revalidatePath("/organisation");
+  redirect("/organisation?toast=branch-created");
 }
 
 export async function createOrganizationUser(formData: FormData) {
-  const current = await requireRole(["super_admin", "admin_compagnie"]);
+  await requireRole(["super_admin"]);
   const values = userSchema.parse(Object.fromEntries(formData));
   const filiale = await prisma.filiale.findUnique({ where: { id: values.filialeId } });
   if (!filiale) throw new Error("Filiale invalide");
-  if (current.role !== "super_admin" && filiale.compagnieId !== current.compagnieId) throw new Error("Acces refuse");
 
   await prisma.utilisateur.create({
     data: {
@@ -55,4 +56,5 @@ export async function createOrganizationUser(formData: FormData) {
     },
   });
   revalidatePath("/organisation");
+  redirect("/organisation?toast=org-user-created");
 }

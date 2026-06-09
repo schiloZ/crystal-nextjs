@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/app-shell";
-import { requireRole } from "@/lib/current-user";
+import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
-import { createRefActe, createRefAssure, createRefContrat, createRefPlafond, createRefPrestataire } from "./actions";
+import { ReferenceSection, type ReferenceField } from "./reference-section";
 
 const toneStyles: Record<string, { top: string; badge: string; value: string }> = {
   sky: { top: "border-t-sky", badge: "bg-sky text-white", value: "text-sky" },
@@ -12,15 +12,16 @@ const toneStyles: Record<string, { top: string; badge: string; value: string }> 
 };
 
 export default async function Page() {
-  const user = await requireRole(["super_admin", "admin_compagnie"]);
+  const user = await getCurrentUser();
+  const canManageReferences = ["super_admin", "admin_compagnie"].includes(user.role);
   const companyWhere = user.role === "super_admin" ? {} : { compagnieId: user.compagnieId };
   const [companies, assures, prestataires, actes, contrats, plafonds, counts] = await Promise.all([
     prisma.compagnie.findMany({ where: user.role === "super_admin" ? {} : { id: user.compagnieId }, orderBy: { nom: "asc" } }),
-    prisma.refAssure.findMany({ where: companyWhere, orderBy: { id: "desc" }, take: 8 }),
-    prisma.refPrestataire.findMany({ where: companyWhere, orderBy: { id: "desc" }, take: 8 }),
-    prisma.refActe.findMany({ where: companyWhere, orderBy: { id: "desc" }, take: 8 }),
-    prisma.refContrat.findMany({ where: companyWhere, orderBy: { id: "desc" }, take: 8 }),
-    prisma.refPlafond.findMany({ where: companyWhere, include: { contrat: true }, orderBy: { id: "desc" }, take: 8 }),
+    prisma.refAssure.findMany({ where: companyWhere, orderBy: { id: "desc" }, take: 50 }),
+    prisma.refPrestataire.findMany({ where: companyWhere, orderBy: { id: "desc" }, take: 50 }),
+    prisma.refActe.findMany({ where: companyWhere, orderBy: { id: "desc" }, take: 50 }),
+    prisma.refContrat.findMany({ where: companyWhere, orderBy: { id: "desc" }, take: 50 }),
+    prisma.refPlafond.findMany({ where: companyWhere, include: { contrat: true }, orderBy: { id: "desc" }, take: 50 }),
     Promise.all([
       prisma.refAssure.count({ where: companyWhere }),
       prisma.refPrestataire.count({ where: companyWhere }),
@@ -62,82 +63,14 @@ export default async function Page() {
         {cards.map((item) => <ReferenceCard item={item} key={item.title} />)}
       </section>
 
-      <section className="mt-7 grid gap-6 xl:grid-cols-[1fr_430px]">
-        <div className="space-y-6">
-          <Preview title="Aperçu — refAssures" headers={["Matricule", "Nom", "Prénom", "Police", "Collège", "Statut"]} rows={assures.map((item) => [item.matricule, item.nom, item.prenom ?? "-", item.police ?? "-", item.college ?? item.numeroCollege ?? "-", item.actif ? "Actif" : "Inactif"])} />
-          <Preview title="Aperçu — refPrestataires" headers={["Code", "Prestataire", "Statut", "Actif"]} rows={prestataires.map((item) => [item.code, item.nom, item.statut, item.actif ? "Oui" : "Non"])} />
-          <Preview title="Aperçu — refActes" headers={["Code acte", "Libellé", "Famille", "Tarif", "Couvert"]} rows={actes.map((item) => [item.codeActe, item.libelle, item.famille ?? "-", formatMoney(Number(item.tarifConventionne)), item.couvert ? "Oui" : "Non"])} />
-          <Preview title="Aperçu — refContrats" headers={["Code", "Libellé", "Police", "Souscripteur", "Statut"]} rows={contrats.map((item) => [item.codeContrat, item.libelle, item.police ?? "-", item.souscripteur ?? "-", item.actif ? "Actif" : "Inactif"])} />
-          <Preview title="Aperçu — refPlafonds" headers={["Code", "Type", "Police", "Acte/Famille", "Montant"]} rows={plafonds.map((item) => [item.codePlafond, item.typePlafond, item.police ?? item.contrat?.police ?? "-", item.codeActe ?? item.famille ?? "-", formatMoney(Number(item.montantPlafond))])} />
-        </div>
-
-        <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-          <div className="card p-5">
-            <p className="text-xs font-black uppercase text-slate-500">Saisie manuelle</p>
-            <h2 className="mt-1 text-xl font-black text-navy">Ajouter une référence</h2>
-            <p className="mt-2 text-sm font-semibold text-slate-500">Ouvrez uniquement le formulaire dont vous avez besoin. Les champs essentiels sont marqués comme obligatoires.</p>
-          </div>
-
-          <RefForm title="Ajouter un assuré" action={createRefAssure} companyId={selectedCompanyId} companies={companies} showCompany={user.role === "super_admin"}>
-            <Input name="matricule" label="Matricule" required />
-            <Input name="nom" label="Nom" required />
-            <Input name="prenom" label="Prénom" />
-            <Input name="dateNaissance" label="Date naissance" type="date" />
-            <Input name="statut" label="Statut bénéficiaire" placeholder="principal, conjoint, enfant..." />
-            <Input name="police" label="Police" />
-            <Input name="policeInterne" label="Police interne" />
-            <Input name="numeroCollege" label="N° collège" />
-            <Input name="college" label="Collège" />
-            <Input name="codeSouscripteur" label="Code souscripteur" />
-            <Input name="souscripteur" label="Souscripteur" />
-            <Input name="matriculeAssurePrincipal" label="Matricule assuré principal" />
-            <Input name="dateAffiliation" label="Date affiliation" type="date" />
-            <Input name="dateRadiation" label="Date radiation" type="date" />
-            <StatusSelect />
-          </RefForm>
-
-          <RefForm title="Ajouter un prestataire" action={createRefPrestataire} companyId={selectedCompanyId} companies={companies} showCompany={user.role === "super_admin"}>
-            <Input name="code" label="Code prestataire" required />
-            <Input name="nom" label="Nom prestataire" required />
-            <Input name="statut" label="Statut" defaultValue="agree" />
-            <StatusSelect />
-          </RefForm>
-
-          <RefForm title="Ajouter un acte" action={createRefActe} companyId={selectedCompanyId} companies={companies} showCompany={user.role === "super_admin"}>
-            <Input name="codeActe" label="Code acte" required />
-            <Input name="libelle" label="Libellé acte" required />
-            <Input name="famille" label="Famille" />
-            <Input name="tarifConventionne" label="Tarif conventionné" type="number" />
-            <SelectBool name="couvert" label="Couvert" />
-            <StatusSelect />
-          </RefForm>
-
-          <RefForm title="Ajouter un contrat" action={createRefContrat} companyId={selectedCompanyId} companies={companies} showCompany={user.role === "super_admin"}>
-            <Input name="codeContrat" label="Code contrat" required />
-            <Input name="libelle" label="Libellé" required />
-            <Input name="police" label="Police" />
-            <Input name="policeInterne" label="Police interne" />
-            <Input name="codeSouscripteur" label="Code souscripteur" />
-            <Input name="souscripteur" label="Souscripteur" />
-            <Input name="dateDebut" label="Début" type="date" />
-            <Input name="dateFin" label="Fin" type="date" />
-            <StatusSelect />
-          </RefForm>
-
-          <RefForm title="Ajouter un plafond" action={createRefPlafond} companyId={selectedCompanyId} companies={companies} showCompany={user.role === "super_admin"}>
-            <select className="input" name="contratId"><option value="">Sans contrat lié</option>{contrats.map((contrat) => <option key={contrat.id} value={contrat.id}>{contrat.codeContrat} · {contrat.libelle}</option>)}</select>
-            <Input name="codePlafond" label="Code plafond" required />
-            <Input name="libelle" label="Libellé" required />
-            <Input name="typePlafond" label="Type plafond" placeholder="acte, famille, individuel..." required />
-            <Input name="police" label="Police" />
-            <Input name="numeroCollege" label="N° collège" />
-            <Input name="codeActe" label="Code acte" />
-            <Input name="famille" label="Famille" />
-            <Input name="montantPlafond" label="Montant plafond" type="number" />
-            <Input name="periodicite" label="Périodicité" placeholder="mensuel, annuel..." />
-            <StatusSelect />
-          </RefForm>
-        </aside>
+      <section className="mt-7 space-y-6">
+          <ReferenceSection canManage={canManageReferences} companyId={selectedCompanyId} companies={companies} createFields={assureFields()} showCompany={user.role === "super_admin"} type="assures" title="refAssures — Référentiel assurés" headers={["Matricule", "Nom", "Prénom", "Police", "Collège", "Statut"]} rows={assures.map((item) => ({ id: item.id, cells: [item.matricule, item.nom, item.prenom ?? "-", item.police ?? "-", item.college ?? item.numeroCollege ?? "-", item.actif ? "Actif" : "Inactif"], fields: [
+            field("matricule", "Matricule", item.matricule, true), field("nom", "Nom", item.nom, true), field("prenom", "Prénom", item.prenom), field("statut", "Statut", item.statut), field("police", "Police", item.police), field("policeInterne", "Police interne", item.policeInterne), field("numeroCollege", "N° collège", item.numeroCollege), field("college", "Collège", item.college), field("codeSouscripteur", "Code souscripteur", item.codeSouscripteur), field("souscripteur", "Souscripteur", item.souscripteur), field("matriculeAssurePrincipal", "Matricule assuré principal", item.matriculeAssurePrincipal), field("dateNaissance", "Date naissance", dateInputValue(item.dateNaissance), false, "date"), field("dateAffiliation", "Date affiliation", dateInputValue(item.dateAffiliation), false, "date"), field("dateRadiation", "Date radiation", dateInputValue(item.dateRadiation), false, "date"), boolField("actif", "Actif", item.actif),
+          ] }))} />
+          <ReferenceSection canManage={canManageReferences} companyId={selectedCompanyId} companies={companies} createFields={prestataireFields()} showCompany={user.role === "super_admin"} type="prestataires" title="refPrestataires — Réseau de soins" headers={["Code", "Prestataire", "Statut", "Actif"]} rows={prestataires.map((item) => ({ id: item.id, cells: [item.code, item.nom, item.statut, item.actif ? "Oui" : "Non"], fields: [field("code", "Code", item.code, true), field("nom", "Nom", item.nom, true), field("statut", "Statut", item.statut), boolField("actif", "Actif", item.actif)] }))} />
+          <ReferenceSection canManage={canManageReferences} companyId={selectedCompanyId} companies={companies} createFields={acteFields()} showCompany={user.role === "super_admin"} type="actes" title="refActes — Nomenclature actes" headers={["Code acte", "Libellé", "Famille", "Tarif", "Couvert"]} rows={actes.map((item) => ({ id: item.id, cells: [item.codeActe, item.libelle, item.famille ?? "-", formatMoney(Number(item.tarifConventionne)), item.couvert ? "Oui" : "Non"], fields: [field("codeActe", "Code acte", item.codeActe, true), field("libelle", "Libellé", item.libelle, true), field("famille", "Famille", item.famille), field("tarifConventionne", "Tarif conventionné", String(Number(item.tarifConventionne)), false, "number"), boolField("couvert", "Couvert", item.couvert), boolField("actif", "Actif", item.actif)] }))} />
+          <ReferenceSection canManage={canManageReferences} companyId={selectedCompanyId} companies={companies} createFields={contratFields()} showCompany={user.role === "super_admin"} type="contrats" title="refContrats — Contrats actifs" headers={["Code", "Libellé", "Police", "Souscripteur", "Statut"]} rows={contrats.map((item) => ({ id: item.id, cells: [item.codeContrat, item.libelle, item.police ?? "-", item.souscripteur ?? "-", item.actif ? "Actif" : "Inactif"], fields: [field("codeContrat", "Code contrat", item.codeContrat, true), field("libelle", "Libellé", item.libelle, true), field("police", "Police", item.police), field("policeInterne", "Police interne", item.policeInterne), field("codeSouscripteur", "Code souscripteur", item.codeSouscripteur), field("souscripteur", "Souscripteur", item.souscripteur), field("dateDebut", "Début", dateInputValue(item.dateDebut), false, "date"), field("dateFin", "Fin", dateInputValue(item.dateFin), false, "date"), boolField("actif", "Actif", item.actif)] }))} />
+          <ReferenceSection canManage={canManageReferences} companyId={selectedCompanyId} companies={companies} createFields={plafondFields()} showCompany={user.role === "super_admin"} type="plafonds" title="refPlafonds — Plafonds contrats" headers={["Code", "Type", "Police", "Acte/Famille", "Montant"]} rows={plafonds.map((item) => ({ id: item.id, cells: [item.codePlafond, item.typePlafond, item.police ?? item.contrat?.police ?? "-", item.codeActe ?? item.famille ?? "-", formatMoney(Number(item.montantPlafond))], fields: [field("contratId", "Contrat ID", item.contratId ? String(item.contratId) : "", false, "number"), field("codePlafond", "Code plafond", item.codePlafond, true), field("libelle", "Libellé", item.libelle, true), field("typePlafond", "Type plafond", item.typePlafond, true), field("police", "Police", item.police), field("numeroCollege", "N° collège", item.numeroCollege), field("codeActe", "Code acte", item.codeActe), field("famille", "Famille", item.famille), field("montantPlafond", "Montant plafond", String(Number(item.montantPlafond)), false, "number"), field("periodicite", "Périodicité", item.periodicite), boolField("actif", "Actif", item.actif)] }))} />
       </section>
     </AppShell>
   );
@@ -148,20 +81,45 @@ function ReferenceCard({ item }: { item: { code: string; title: string; subtitle
   return <article className={`card border-t-[6px] ${tone.top} p-4`}><div className="flex items-start gap-3"><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-md text-xs font-black ${tone.badge}`}>{item.code}</span><div className="min-w-0"><h2 className="truncate text-base font-black text-navy">{item.title}</h2><p className="truncate text-xs font-semibold text-slate-500">{item.subtitle}</p></div></div><p className={`mt-4 text-xl font-black ${tone.value}`}>{item.value}</p><p className="mt-2 text-xs font-black uppercase text-slate-400">Saisie active</p></article>;
 }
 
-function Preview({ title, headers, rows }: { title: string; headers: string[]; rows: string[][] }) {
-  return <section className="card overflow-hidden"><div className="flex items-center justify-between gap-4 border-b border-line px-5 py-4"><div><h2 className="text-lg font-black text-navy">{title}</h2><p className="text-xs font-semibold text-slate-500">Derniers enregistrements saisis</p></div><span className="rounded-md bg-sky/10 px-3 py-2 text-xs font-black text-sky">{formatNumber(rows.length)}</span></div><div className="overflow-x-auto"><table className="table"><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.length ? rows.map((row, index) => <tr className="odd:bg-white even:bg-sky/10" key={index}>{row.map((cell, cellIndex) => <td className={cellIndex === 0 ? "font-mono font-bold text-navy" : ""} key={cellIndex}>{cell}</td>)}</tr>) : <tr><td className="p-8 text-center text-sm font-semibold text-slate-500" colSpan={headers.length}>Aucune donnée enregistrée.</td></tr>}</tbody></table></div></section>;
-}
-
-function RefForm({ title, action, children, companyId, companies, showCompany }: { title: string; action: (formData: FormData) => Promise<void>; children: React.ReactNode; companyId: number; companies: Array<{ id: number; nom: string }>; showCompany: boolean }) {
-  const open = title.includes("assuré");
-  return <details className="card overflow-hidden" open={open}><summary className="flex cursor-pointer list-none items-center justify-between gap-4 bg-white px-5 py-4"><span className="font-black text-navy">{title}</span><span className="rounded-md bg-sky/10 px-3 py-2 text-xs font-black text-sky">Ouvrir</span></summary><form action={action} className="border-t border-line"><div className="grid gap-3 p-5">{showCompany ? <label><span className="mb-1 block text-xs font-black uppercase text-slate-500">Compagnie</span><select className="input" name="compagnieId" defaultValue={companyId}>{companies.map((company) => <option key={company.id} value={company.id}>{company.nom}</option>)}</select></label> : <input name="compagnieId" type="hidden" value={companyId} />}{children}<button className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-black text-white">Enregistrer</button></div></form></details>;
-}
-
-function Input({ label, name, type = "text", required = false, placeholder, defaultValue }: { label: string; name: string; type?: string; required?: boolean; placeholder?: string; defaultValue?: string }) {
-  return <label><span className="mb-1 block text-xs font-black uppercase text-slate-500">{label}</span><input className="input" defaultValue={defaultValue} name={name} placeholder={placeholder} required={required} type={type} /></label>;
-}
-
-function StatusSelect() { return <SelectBool name="actif" label="Actif" />; }
-function SelectBool({ label, name }: { label: string; name: string }) { return <label><span className="mb-1 block text-xs font-black uppercase text-slate-500">{label}</span><select className="input" name={name} defaultValue="true"><option value="true">Oui</option><option value="false">Non</option></select></label>; }
 function formatNumber(value: number) { return value.toLocaleString("fr-FR"); }
 function formatMoney(value: number) { return `${Math.round(value).toLocaleString("fr-FR")} F`; }
+function field(name: string, label: string, value: string | null | undefined, required = false, type = "text"): ReferenceField {
+  return { name, label, value: value ?? "", required, type };
+}
+function boolField(name: string, label: string, value: boolean): ReferenceField {
+  return { name, label, value: String(value), bool: true };
+}
+function dateInputValue(value: Date | null | undefined) {
+  return value ? value.toISOString().slice(0, 10) : "";
+}
+function assureFields() {
+  return [
+    field("matricule", "Matricule", "", true),
+    field("nom", "Nom", "", true),
+    field("prenom", "Prénom", ""),
+    field("dateNaissance", "Date naissance", "", false, "date"),
+    field("statut", "Statut bénéficiaire", ""),
+    field("police", "Police", ""),
+    field("policeInterne", "Police interne", ""),
+    field("numeroCollege", "N° collège", ""),
+    field("college", "Collège", ""),
+    field("codeSouscripteur", "Code souscripteur", ""),
+    field("souscripteur", "Souscripteur", ""),
+    field("matriculeAssurePrincipal", "Matricule assuré principal", ""),
+    field("dateAffiliation", "Date affiliation", "", false, "date"),
+    field("dateRadiation", "Date radiation", "", false, "date"),
+    boolField("actif", "Actif", true),
+  ];
+}
+function prestataireFields() {
+  return [field("code", "Code prestataire", "", true), field("nom", "Nom prestataire", "", true), field("statut", "Statut", "agree"), boolField("actif", "Actif", true)];
+}
+function acteFields() {
+  return [field("codeActe", "Code acte", "", true), field("libelle", "Libellé acte", "", true), field("famille", "Famille", ""), field("tarifConventionne", "Tarif conventionné", "0", false, "number"), boolField("couvert", "Couvert", true), boolField("actif", "Actif", true)];
+}
+function contratFields() {
+  return [field("codeContrat", "Code contrat", "", true), field("libelle", "Libellé", "", true), field("police", "Police", ""), field("policeInterne", "Police interne", ""), field("codeSouscripteur", "Code souscripteur", ""), field("souscripteur", "Souscripteur", ""), field("dateDebut", "Début", "", false, "date"), field("dateFin", "Fin", "", false, "date"), boolField("actif", "Actif", true)];
+}
+function plafondFields() {
+  return [field("contratId", "Contrat ID", "", false, "number"), field("codePlafond", "Code plafond", "", true), field("libelle", "Libellé", "", true), field("typePlafond", "Type plafond", "", true), field("police", "Police", ""), field("numeroCollege", "N° collège", ""), field("codeActe", "Code acte", ""), field("famille", "Famille", ""), field("montantPlafond", "Montant plafond", "0", false, "number"), field("periodicite", "Périodicité", ""), boolField("actif", "Actif", true)];
+}

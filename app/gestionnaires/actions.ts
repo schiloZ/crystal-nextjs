@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -60,6 +61,7 @@ export async function toggleManager(formData: FormData) {
   await prisma.gestionnaire.update({ where: { id }, data: { actif: !manager.actif } });
   revalidatePath("/gestionnaires");
   revalidatePath("/import");
+  redirect("/gestionnaires?toast=manager-status");
 }
 
 export async function updateManager(formData: FormData) {
@@ -92,4 +94,5 @@ export async function updateManager(formData: FormData) {
   });
   revalidatePath("/gestionnaires");
   revalidatePath("/import");
+  redirect("/gestionnaires?toast=manager-updated");
 }

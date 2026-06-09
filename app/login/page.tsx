@@ -7,7 +7,7 @@ export default function Login() {
     await signIn("credentials", {
       email: formData.get("email"),
       password: formData.get("password"),
-      redirectTo: "/dashboard",
+      redirectTo: "/dashboard?toast=login",
     });
   }
 

@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { ModalForm } from "@/components/modal-form";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -69,13 +70,17 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
   ];
 
   return <AppShell title="Prestations tardives — R02" subtitle={`Audit / Rapports / Tardifs / ${file.nomFichier}`}>
-    <form className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-line bg-white px-5 py-4 shadow-soft">
-      <label className="min-w-72 flex-1"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
-      <label className="min-w-52"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Type de tardif</span><select className="input" defaultValue={mode} name="mode"><option value="exercice">Hors exercice</option>{hasTolerance && <option value="tolerance">Hors période de tolérance</option>}</select></label>
-      <div className="min-w-64 rounded-lg border border-line bg-slate-50 px-4 py-3"><span className="block text-xs font-black uppercase text-slate-500">Tolérance de l’exercice</span><span className="mt-1 block text-sm font-black text-navy">{toleranceLabel(file.exercice.dateDebutToleranceTardif, file.exercice.dateFinToleranceTardif)}</span></div>
-      <button className="btn">Afficher le rapport</button>
+    <section className="mb-5 flex flex-wrap justify-end gap-3">
+      <ModalForm title="Filtres du rapport" trigger={<button className="btn">Filtres</button>}>
+        <form className="space-y-4 p-5">
+          <label className="block"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
+          <label className="block"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Type de tardif</span><select className="input" defaultValue={mode} name="mode"><option value="exercice">Hors exercice</option>{hasTolerance && <option value="tolerance">Hors période de tolérance</option>}</select></label>
+          <div className="rounded-lg border border-line bg-slate-50 px-4 py-3"><span className="block text-xs font-black uppercase text-slate-500">Tolérance de l’exercice</span><span className="mt-1 block text-sm font-black text-navy">{toleranceLabel(file.exercice.dateDebutToleranceTardif, file.exercice.dateFinToleranceTardif)}</span></div>
+          <button className="w-full rounded-lg bg-sky px-5 py-3 text-sm font-black text-white">Afficher le rapport</button>
+        </form>
+      </ModalForm>
       <a className="rounded-lg bg-navy px-5 py-3 text-sm font-black text-white" href={`/synthese?fichier=${file.id}`}>Voir la synthèse</a>
-    </form>
+    </section>
 
     <section className="mb-5 flex flex-wrap items-center gap-5 border-l-8 border-orange-500 bg-yellow-100 px-5 py-4">
       <div className="min-w-80 flex-1">

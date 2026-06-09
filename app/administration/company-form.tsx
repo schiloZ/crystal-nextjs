@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
+import { notifyToast } from "@/components/toaster";
 import { createCompany, type CompanyFormState } from "./actions";
 
 const initialState: CompanyFormState = {};
@@ -11,8 +12,12 @@ export function CompanyForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state.success) formRef.current?.reset();
-  }, [state.success]);
+    if (state.success) {
+      formRef.current?.reset();
+      notifyToast("success", state.success);
+    }
+    if (state.error) notifyToast("error", state.error);
+  }, [state.error, state.success]);
 
   return (
     <form action={action} className="space-y-3 p-6" ref={formRef}>

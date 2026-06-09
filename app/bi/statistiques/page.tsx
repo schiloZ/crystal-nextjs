@@ -1,44 +1,51 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { BarBox, DonutBox, LineBox } from "@/components/charts";
+import { getBiData } from "@/lib/bi-data";
+import { getCurrentUser } from "@/lib/current-user";
 
 const tabs = ["Beneficiaires", "Prestataires", "Actes medicaux", "Colleges", "Gestionnaires"];
-const rows = [
-  ["NSIA-004521", "KOUASSI P. ANGE", "48", "487 500 F"],
-  ["NSIA-007834", "BAMBA KOFI J.", "42", "398 250 F"],
-  ["NSIA-003217", "YAOUA NINA M.", "38", "325 000 F"],
-  ["NSIA-009456", "TRAORE SEYDOU", "35", "298 750 F"],
-  ["NSIA-002198", "DIALLO AMINATA", "32", "275 500 F"],
-  ["NSIA-011234", "COULIBALY MARC", "29", "245 000 F"],
-  ["NSIA-005671", "OUATTARA IB.", "27", "220 000 F"],
-  ["NSIA-008923", "ASSI PIERRE", "25", "198 000 F"],
-  ["NSIA-015678", "N'DRI CHARLES", "23", "160 500 F"],
-  ["NSIA-019234", "GBESSI H.", "21", "175 250 F"],
-];
-const distribution = [
-  { name: "0-10K", value: 3450 },
-  { name: "10-25K", value: 4120 },
-  { name: "25-50K", value: 2890 },
-  { name: "50-100K", value: 1234 },
-  { name: "100K+", value: 456 },
-];
-const monthly = [
-  { name: "Jan", value: 180 },
-  { name: "Fev", value: 220 },
-  { name: "Mar", value: 20 },
-  { name: "Avr", value: 20 },
-  { name: "Mai", value: 182 },
-  { name: "Juin", value: 20 },
-  { name: "Juil", value: 20 },
-  { name: "Aout", value: 20 },
-  { name: "Sep", value: 20 },
-  { name: "Oct", value: 20 },
-  { name: "Nov", value: 20 },
-  { name: "Dec", value: 20 },
-];
-const stats = [["Montant moyen", "19 920 F"], ["Mediane", "18 500 F"], ["Ecart-type", "12 340 F"], ["Min", "500 F"], ["Max", "450 000 F"]];
 
-export default function Page() {
+function formatMoney(value: number) {
+  return `${Math.round(value).toLocaleString("fr-FR")} F`;
+}
+
+function formatMoneyShort(value: number) {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}G F`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M F`;
+  return `${Math.round(value).toLocaleString("fr-FR")} F`;
+}
+
+function buildDistribution(amounts: number[]) {
+  const buckets = [
+    { name: "0-10K", min: 0, max: 10_000, value: 0 },
+    { name: "10-25K", min: 10_000, max: 25_000, value: 0 },
+    { name: "25-50K", min: 25_000, max: 50_000, value: 0 },
+    { name: "50-100K", min: 50_000, max: 100_000, value: 0 },
+    { name: "100K+", min: 100_000, max: Number.POSITIVE_INFINITY, value: 0 },
+  ];
+  for (const amount of amounts) {
+    const bucket = buckets.find((item) => amount >= item.min && amount < item.max) ?? buckets[buckets.length - 1];
+    bucket.value += 1;
+  }
+  return buckets.map(({ name, value }) => ({ name, value }));
+}
+
+export default async function Page() {
+  const data = await getBiData(await getCurrentUser());
+  const rows = data.beneficiaries;
+  const distribution = buildDistribution(rows.map((row) => row.amount / Math.max(row.count, 1)));
+  const monthly = data.monthly.map((month) => ({ name: month.name, value: month.amountM }));
+  const familyTotal = data.families.reduce((sum, family) => sum + family.value, 0);
+  const familySplit = data.families.length ? data.families.slice(0, 5).map((family) => ({ name: family.name, value: family.value })) : [{ name: "Aucune donnee", value: 1 }];
+  const stats = [
+    ["Montant moyen", formatMoney(data.amountStats.avg)],
+    ["Montant minimum", formatMoney(data.amountStats.min)],
+    ["Montant maximum", formatMoney(data.amountStats.max)],
+    ["Total consomme", formatMoneyShort(data.totalClaimed)],
+    ["Economies", formatMoneyShort(data.savings)],
+  ];
+
   return <AppShell title="Statistiques descriptives — BI-02" subtitle="BI & Analytics / Statistiques">
     <div className="mb-4 flex gap-2 text-sm font-black">
       <Link href="/bi" className="rounded-md bg-white px-5 py-3 text-slate-500">Dashboard</Link>
@@ -56,26 +63,32 @@ export default function Page() {
         <div className="overflow-hidden rounded-lg border border-[#d9edf7] bg-white shadow-soft">
           <table className="table">
             <thead><tr><th>Matricule</th><th>Beneficiaire</th><th>Nb actes</th><th>Montant</th></tr></thead>
-            <tbody>{rows.map((row, index) => <tr key={row[0]} className={index % 2 ? "bg-sky/10" : "bg-white"}><td className="font-mono text-xs">{row[0]}</td><td className="font-black text-navy">{row[1]}</td><td>{row[2]}</td><td className="font-black text-orange-600">{row[3]}</td></tr>)}</tbody>
+            <tbody>
+              {rows.length ? rows.map((row, index) => <tr key={`${row.matricule}-${row.name}`} className={index % 2 ? "bg-sky/10" : "bg-white"}>
+                <td className="font-mono text-xs">{row.matricule}</td>
+                <td className="font-black text-navy">{row.name}</td>
+                <td>{row.count}</td>
+                <td className="font-black text-orange-600">{formatMoney(row.amount)}</td>
+              </tr>) : <tr><td colSpan={4} className="py-8 text-center font-semibold text-slate-500">Aucun beneficiaire trouve.</td></tr>}
+            </tbody>
           </table>
         </div>
       </section>
       <section>
-        <h2 className="mb-3 text-lg font-black text-navy">Distribution montants</h2>
+        <h2 className="mb-3 text-lg font-black text-navy">Distribution montants moyens</h2>
         <div className="card p-3"><BarBox data={distribution}/></div>
         <div className="mt-2 space-y-2">{stats.map(([label, value]) => <div key={label} className="flex justify-between rounded-lg bg-white px-4 py-2 shadow-soft"><span className="font-semibold text-slate-500">{label}</span><b className="text-navy">{value}</b></div>)}</div>
       </section>
       <section>
-        <h2 className="mb-3 text-lg font-black text-navy">Consommation mensuelle 2026</h2>
+        <h2 className="mb-3 text-lg font-black text-navy">Consommation mensuelle {data.selectedYear}</h2>
         <div className="card p-3"><LineBox data={monthly}/></div>
         <div className="mt-4 grid grid-cols-[1fr_1fr] items-center gap-4">
           <div className="space-y-2 text-sm font-semibold text-slate-600">
-            <div><span className="inline-block h-4 w-4 bg-pink-400"/> Femmes 46%</div>
-            <div><span className="inline-block h-4 w-4 bg-sky"/> Hommes 54%</div>
+            {familySplit.slice(0, 3).map((family) => <div key={family.name}><span className="inline-block h-4 w-4 bg-sky"/> {family.name} {familyTotal ? Math.round((family.value / familyTotal) * 100) : 0}%</div>)}
           </div>
           <div>
-            <h3 className="text-center font-black text-navy">H/F</h3>
-            <DonutBox data={[{name:"Hommes",value:54},{name:"Femmes",value:46}]} center="100"/>
+            <h3 className="text-center font-black text-navy">Familles</h3>
+            <DonutBox data={familySplit} center={String(familyTotal)}/>
           </div>
         </div>
       </section>

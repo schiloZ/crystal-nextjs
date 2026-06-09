@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -67,6 +68,7 @@ export async function toggleExercise(formData: FormData) {
 
   await prisma.exerciceComptable.update({ where: { id }, data: { actif: !exercise.actif } });
   revalidatePath("/exercices");
+  redirect("/exercices?toast=exercise-status");
 }
 
 export async function updateTardinessWindow(formData: FormData) {
@@ -88,4 +90,5 @@ export async function updateTardinessWindow(formData: FormData) {
   revalidatePath("/rapports/tardifs");
   revalidatePath("/rapports/temporel");
   revalidatePath("/synthese");
+  redirect("/exercices?toast=exercise-updated");
 }

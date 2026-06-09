@@ -1,61 +1,26 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { DonutBox, LineBox, BarBox } from "@/components/charts";
-import { chartData } from "@/lib/mock-data";
+import { getBiData } from "@/lib/bi-data";
+import { getCurrentUser } from "@/lib/current-user";
 
-const filters = [
-  ["Annee:", "2026"],
-  ["Compagnie:", "NSIA Assurances"],
-  ["Filiale:", "Toutes"],
-  ["Gestionnaire:", "Tous"],
-  ["Vue:", "Mensuelle"],
-];
+type Kpi = { icon: string; value: string; label: string; sub: string; color: string };
 
-const kpis = [
-  { icon: "FA", value: "24", label: "Fichiers analyses", sub: "Ce trimestre", color: "#38bdf8" },
-  { icon: "TL", value: "298K", label: "Total lignes", sub: "Toutes comp.", color: "#10285a" },
-  { icon: "MC", value: "5.8G", label: "Montant controle", sub: "FCFA YTD", color: "#059669" },
-  { icon: "EC", value: "487M", label: "Total economies", sub: "FCFA economises", color: "#d97706" },
-  { icon: "TF", value: "9.2%", label: "Taux fraude moy.", sub: "Sur l'ensemble", color: "#dc2626" },
-];
+function formatNumber(value: number) {
+  return value.toLocaleString("fr-FR");
+}
 
-const gestionnaires = [
-  { name: "MEDIA.", value: 248 },
-  { name: "EURAFRIC", value: 185 },
-  { name: "SOGEHAN", value: 142 },
-  { name: "MUTAM", value: 98 },
-  { name: "GMS", value: 76 },
-];
-const families = [
-  { name: "Consult.", value: 35 },
-  { name: "Pharmacie", value: 28 },
-  { name: "Hospit.", value: 18 },
-  { name: "Biologie", value: 12 },
-  { name: "Autres", value: 7 },
-];
-const savings = [
-  ["MEDIASSUR SARL", "8.7M F", 94],
-  ["EURAFRIC GESTION", "6.4M F", 78],
-  ["SOGEHAN", "4.2M F", 74],
-  ["MUTAM ASSUR", "2.8M F", 62],
-  ["GMS", "1.9M F", 56],
-] as const;
-const anomalyTrend = [
-  { name: "Jan", value: 9.2 },
-  { name: "Fev", value: 8.9 },
-  { name: "Mar", value: 7.8 },
-  { name: "Avr", value: 8.4 },
-  { name: "Mai", value: 8.1 },
-  { name: "Juin", value: 7.5 },
-  { name: "Juil", value: 7.3 },
-  { name: "Aout", value: 7.4 },
-  { name: "Sep", value: 7.1 },
-  { name: "Oct", value: 7.6 },
-  { name: "Nov", value: 7.2 },
-  { name: "Dec", value: 7.5 },
-];
+function formatMoneyShort(value: number) {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}G F`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M F`;
+  return `${Math.round(value).toLocaleString("fr-FR")} F`;
+}
 
-function KpiCard({ item }: { item: typeof kpis[number] }) {
+function shortName(value: string) {
+  return value.length > 10 ? `${value.slice(0, 9)}.` : value;
+}
+
+function KpiCard({ item }: { item: Kpi }) {
   return <article className="relative overflow-hidden rounded-lg border border-[#d9edf7] bg-white p-5 shadow-soft">
     <div className="mb-4 grid h-14 w-14 place-items-center rounded-full text-sm font-black text-white" style={{ backgroundColor: item.color }}>{item.icon}</div>
     <h3 className="text-4xl font-black leading-none text-navy">{item.value}</h3>
@@ -74,7 +39,33 @@ function BiTabs() {
   </div>
 }
 
-export default function Page() {
+export default async function Page() {
+  const user = await getCurrentUser();
+  const data = await getBiData(user);
+  const filters = [
+    ["Annee:", String(data.selectedYear)],
+    ["Compagnie:", data.companyLabel],
+    ["Filiale:", user.filialeNom ?? "Toutes"],
+    ["Gestionnaire:", "Tous"],
+    ["Vue:", "Mensuelle"],
+  ];
+  const kpis: Kpi[] = [
+    { icon: "FA", value: formatNumber(data.fileCount), label: "Fichiers analyses", sub: `${data.yearFileCount} fichier(s) en ${data.selectedYear}`, color: "#38bdf8" },
+    { icon: "TL", value: formatNumber(data.totalLines), label: "Total lignes", sub: "Toutes periodes", color: "#10285a" },
+    { icon: "MC", value: formatMoneyShort(data.totalClaimed), label: "Montant controle", sub: "FCFA consolides", color: "#059669" },
+    { icon: "EC", value: formatMoneyShort(data.savings), label: "Total economies", sub: "FCFA economises", color: "#d97706" },
+    { icon: "TF", value: `${data.anomalyRate.toFixed(1)}%`, label: "Taux anomalies moy.", sub: `${formatNumber(data.anomalyCount)} anomalie(s)`, color: "#dc2626" },
+  ];
+  const monthlyAmounts = data.monthly.map((month) => ({ name: month.name, value: month.amountM }));
+  const gestionnaires = data.managers.slice(0, 5).map((manager) => ({ name: shortName(manager.name), value: Math.round(manager.amount / 1_000_000) }));
+  const families = data.families.length ? data.families.slice(0, 5).map((family) => ({ name: shortName(family.name), value: family.value })) : [{ name: "Aucune donnee", value: 1 }];
+  const maxSavings = Math.max(...data.managers.map((manager) => manager.amount - manager.recommended), 1);
+  const savings = data.managers.slice(0, 5).map((manager) => {
+    const amount = Math.max(manager.amount - manager.recommended, 0);
+    return { name: manager.name, amount, width: Math.max(8, Math.round((amount / maxSavings) * 100)) };
+  });
+  const anomalyTrend = data.monthly.map((month) => ({ name: month.name, value: month.anomalyRate }));
+
   return <AppShell title="Business Intelligence — Dashboard" subtitle="BI & Analytics / Dashboard executif">
     <BiTabs/>
     <section className="mb-5 flex flex-wrap items-center gap-8 rounded-lg bg-white px-5 py-4 shadow-soft">
@@ -91,7 +82,7 @@ export default function Page() {
     <div className="grid grid-cols-[1.1fr_0.9fr_0.85fr] gap-2">
       <section className="card p-3">
         <h2 className="font-black text-navy">Evolution mensuelle — Montant reclame (M FCFA)</h2>
-        <LineBox data={chartData}/>
+        <LineBox data={monthlyAmounts}/>
       </section>
       <section className="card p-3">
         <h2 className="font-black text-navy">Consommation par gestionnaire (M FCFA)</h2>
@@ -99,7 +90,7 @@ export default function Page() {
       </section>
       <section className="card p-3">
         <h2 className="text-center font-black text-navy">Repartition familles</h2>
-        <DonutBox data={families} center="100"/>
+        <DonutBox data={families} center={formatNumber(data.families.reduce((sum, family) => sum + family.value, 0))}/>
       </section>
     </div>
 
@@ -107,15 +98,15 @@ export default function Page() {
       <section>
         <h2 className="mb-3 text-lg font-black text-navy">Top economies par gestionnaire</h2>
         <div className="space-y-2">
-          {savings.map(([name, amount, width]) => <div key={name} className="rounded-lg bg-white px-4 py-2 shadow-soft">
+          {savings.length ? savings.map((item) => <div key={item.name} className="rounded-lg bg-white px-4 py-2 shadow-soft">
             <div className="flex items-center justify-between">
-              <b className="text-navy">{name}</b>
-              <b className="text-emerald-700">{amount}</b>
+              <b className="text-navy">{item.name}</b>
+              <b className="text-emerald-700">{formatMoneyShort(item.amount)}</b>
             </div>
             <div className="mt-1 h-2 rounded-full bg-blue-100">
-              <div className="h-full rounded-full bg-emerald-600" style={{ width: `${width}%` }}/>
+              <div className="h-full rounded-full bg-emerald-600" style={{ width: `${item.width}%` }}/>
             </div>
-          </div>)}
+          </div>) : <div className="rounded-lg bg-white px-4 py-5 text-sm font-semibold text-slate-500 shadow-soft">Aucune economie calculee pour cette periode.</div>}
         </div>
       </section>
       <section className="card p-3">

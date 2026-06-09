@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { ModalForm } from "@/components/modal-form";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -60,11 +61,15 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
   ];
 
   return <AppShell title="Anomalies bénéficiaires — R05" subtitle={`Audit / Rapports / Bénéficiaires / ${file.nomFichier}`}>
-    <form className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-line bg-white px-5 py-4 shadow-soft">
-      <label className="min-w-80 flex-1"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
-      <button className="btn">Afficher le rapport</button>
+    <section className="mb-5 flex flex-wrap justify-end gap-3">
+      <ModalForm title="Filtres du rapport" trigger={<button className="btn">Filtres</button>}>
+        <form className="space-y-4 p-5">
+          <label className="block"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
+          <button className="w-full rounded-lg bg-sky px-5 py-3 text-sm font-black text-white">Afficher le rapport</button>
+        </form>
+      </ModalForm>
       <a className="rounded-lg bg-navy px-5 py-3 text-sm font-black text-white" href={`/synthese?fichier=${file.id}`}>Voir la synthèse</a>
-    </form>
+    </section>
 
     <section className="mb-6 rounded-lg border border-sky/20 bg-sky/5 px-5 py-4">
       <p className="text-sm font-black text-sky">Contrôle conditionnel — refAssures : {formatNumber(refsActive)} assurés actifs — {file.compagnie.nom}</p>

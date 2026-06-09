@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { BarBox, DonutBox, LineBox } from "@/components/charts";
+import { ModalForm } from "@/components/modal-form";
 import { Status } from "@/components/ui";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -66,21 +67,16 @@ export default async function Page({ searchParams }: { searchParams?: { annee?: 
   const companyName = user.role === "super_admin" ? "Toutes compagnies" : user.compagnieNom;
 
   return <AppShell title="Tableau de bord" subtitle="Accueil / Tableau de bord">
-    <form className="mb-5 flex flex-wrap items-center gap-3 rounded-lg bg-white px-5 py-3 shadow-soft">
-      <span className="mr-2 text-sm font-black text-navy">Période :</span>
-      <select className="input max-w-40" name="annee" defaultValue={selectedYear}>
-        {years.length ? years.map((year) => <option key={year.anneeFichier} value={year.anneeFichier}>{year.anneeFichier}</option>) : <option value={selectedYear}>{selectedYear}</option>}
-      </select>
-      <select className="input max-w-48" name="mois" defaultValue={selectedMonth}>
-        <option value="0">Toute l'année</option>
-        {monthNames.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
-      </select>
-      <button className="btn">Afficher</button>
-      <div className="ml-auto flex items-center gap-8 text-sm">
-        <span className="font-semibold text-slate-500">Compagnie :</span>
-        <b className="text-navy">{companyName}</b>
-      </div>
-    </form>
+    <section className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-5 py-3 shadow-soft">
+      <div className="text-sm"><span className="font-semibold text-slate-500">Compagnie :</span> <b className="text-navy">{companyName}</b></div>
+      <ModalForm title="Filtres du tableau de bord" trigger={<button className="btn">Filtres</button>}>
+        <form className="space-y-4 p-5">
+          <label className="block"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Année</span><select className="input" name="annee" defaultValue={selectedYear}>{years.length ? years.map((year) => <option key={year.anneeFichier} value={year.anneeFichier}>{year.anneeFichier}</option>) : <option value={selectedYear}>{selectedYear}</option>}</select></label>
+          <label className="block"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Mois</span><select className="input" name="mois" defaultValue={selectedMonth}><option value="0">Toute l'année</option>{monthNames.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}</select></label>
+          <button className="w-full rounded-lg bg-sky px-5 py-3 text-sm font-black text-white">Afficher</button>
+        </form>
+      </ModalForm>
+    </section>
 
     <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <KpiCard icon="LI" label="Lignes importées" value={prestations.toLocaleString("fr-FR")} sub={`${files.length} fichier(s) analysé(s)`} color="#38bdf8"/>

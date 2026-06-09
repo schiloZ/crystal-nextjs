@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { ModalForm } from "@/components/modal-form";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -76,12 +77,16 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
   ];
 
   return <AppShell title="Scores de risque — R11" subtitle={`Audit / Analyse / Scores / ${file.nomFichier}`}>
-    <form className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-line bg-white px-5 py-4 shadow-soft">
-      <label className="min-w-80 flex-1"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
-      <input name="vue" type="hidden" value={mode} />
-      <button className="btn">Afficher l’analyse</button>
+    <section className="mb-5 flex flex-wrap justify-end gap-3">
+      <ModalForm title="Choisir l'audit" trigger={<button className="btn">Filtres</button>}>
+        <form className="space-y-4 p-5">
+          <label className="block"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
+          <input name="vue" type="hidden" value={mode} />
+          <button className="w-full rounded-lg bg-sky px-5 py-3 text-sm font-black text-white">Afficher l’analyse</button>
+        </form>
+      </ModalForm>
       <a className="rounded-lg bg-navy px-5 py-3 text-sm font-black text-white" href={`/synthese?fichier=${file.id}`}>Voir la synthèse</a>
-    </form>
+    </section>
 
     <section className="mb-5 rounded-lg bg-navy px-6 py-4 text-white"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{file.nomFichier}</h2><p className="mt-1 text-sm font-semibold text-blue-100">{file.compagnie.nom} · {file.filiale.nom} · {fullManagerName(file.gestionnaire.prenoms, file.gestionnaire.nom)}</p></div><div className="text-right"><p className="text-2xl font-black">{averageScore.toFixed(1)}/100</p><p className="text-xs font-bold uppercase text-blue-100">score moyen prestataires</p></div></div></section>
 

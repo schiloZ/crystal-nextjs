@@ -1,5 +1,6 @@
 import { FileDown, Filter, Layers, Printer, Settings2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ModalForm } from "@/components/modal-form";
 import { PrintReportButton } from "@/components/print-report-button";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -70,32 +71,44 @@ export default async function Page({ searchParams }: { searchParams?: Record<str
   return (
     <AppShell title="Générateur de rapport d'audit" subtitle="Audit / Rapport paramétrable">
       <section className="card mb-6 overflow-hidden">
-        <div className="flex items-center gap-3 bg-navy px-6 py-4 text-white">
-          <Filter size={20} />
-          <div><h2 className="text-lg font-black">Périmètre du rapport</h2><p className="text-xs font-semibold text-blue-100">Par gestionnaire, exercice, fichiers, période, filiale ou compagnie</p></div>
-        </div>
-        <form className="grid gap-4 p-5 lg:grid-cols-4" method="get">
-          {user.role === "super_admin" && <Select label="Compagnie" name="compagnie" value={String(companyId ?? "")} options={companies.map((item) => ({ value: item.id, label: item.nom }))} />}
-          <Select label="Exercice" name="exercice" value={String(params.exerciceId ?? "")} options={exercises.map((item) => ({ value: item.id, label: item.codeExercice }))} />
-          <Select label="Filiale" name="filiale" value={String(params.filialeId ?? "")} options={branches.map((item) => ({ value: item.id, label: item.nom }))} />
-          <Select label="Gestionnaire" name="gestionnaire" value={String(params.gestionnaireId ?? "")} options={managers.map((item) => ({ value: item.id, label: fullName(item.prenoms, item.nom) }))} />
-          <label><span className="mb-1 block text-xs font-black uppercase text-slate-500">Début import</span><input className="input" defaultValue={params.debutRaw} name="debut" type="date" /></label>
-          <label><span className="mb-1 block text-xs font-black uppercase text-slate-500">Fin import</span><input className="input" defaultValue={params.finRaw} name="fin" type="date" /></label>
-          <div className="lg:col-span-2">
-            <span className="mb-1 block text-xs font-black uppercase text-slate-500">Fichiers de prestations</span>
-            <div className="max-h-36 overflow-y-auto rounded-lg border border-line bg-white p-2">
-              {availableFiles.length === 0 ? <p className="px-2 py-3 text-sm font-semibold text-slate-500">Aucun fichier sur ce périmètre.</p> : availableFiles.map((file) => {
-                const checked = params.fileIds.length ? params.fileIds.includes(file.id) : true;
-                return <label className="flex items-center gap-2 rounded-md px-2 py-2 text-sm font-semibold hover:bg-sky/10" key={file.id}><input defaultChecked={checked} name="fichier" type="checkbox" value={file.id} /><span>{monthLabel(file.moisFichier, file.anneeFichier)} · {file.nomFichier} · {file.gestionnaire.nom}</span></label>;
-              })}
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-navy px-6 py-4 text-white">
+          <div className="flex items-center gap-3">
+            <Filter size={20} />
+            <div><h2 className="text-lg font-black">Périmètre du rapport</h2><p className="text-xs font-semibold text-blue-100">Par gestionnaire, exercice, fichiers, période, filiale ou compagnie</p></div>
           </div>
-          <div className="flex items-end gap-3 lg:col-span-4">
-            <button className="btn inline-flex items-center gap-2"><Settings2 size={17} /> Appliquer</button>
+          <div className="flex flex-wrap gap-2">
+            <ModalForm size="lg" title="Périmètre du rapport" trigger={<button className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-black text-navy"><Settings2 size={17} /> Filtres</button>}>
+              <form className="grid gap-4 p-5 lg:grid-cols-4" method="get">
+                {user.role === "super_admin" && <Select label="Compagnie" name="compagnie" value={String(companyId ?? "")} options={companies.map((item) => ({ value: item.id, label: item.nom }))} />}
+                <Select label="Exercice" name="exercice" value={String(params.exerciceId ?? "")} options={exercises.map((item) => ({ value: item.id, label: item.codeExercice }))} />
+                <Select label="Filiale" name="filiale" value={String(params.filialeId ?? "")} options={branches.map((item) => ({ value: item.id, label: item.nom }))} />
+                <Select label="Gestionnaire" name="gestionnaire" value={String(params.gestionnaireId ?? "")} options={managers.map((item) => ({ value: item.id, label: fullName(item.prenoms, item.nom) }))} />
+                <label><span className="mb-1 block text-xs font-black uppercase text-slate-500">Début import</span><input className="input" defaultValue={params.debutRaw} name="debut" type="date" /></label>
+                <label><span className="mb-1 block text-xs font-black uppercase text-slate-500">Fin import</span><input className="input" defaultValue={params.finRaw} name="fin" type="date" /></label>
+                <div className="lg:col-span-2">
+                  <span className="mb-1 block text-xs font-black uppercase text-slate-500">Fichiers de prestations</span>
+                  <div className="max-h-36 overflow-y-auto rounded-lg border border-line bg-white p-2">
+                    {availableFiles.length === 0 ? <p className="px-2 py-3 text-sm font-semibold text-slate-500">Aucun fichier sur ce périmètre.</p> : availableFiles.map((file) => {
+                      const checked = params.fileIds.length ? params.fileIds.includes(file.id) : true;
+                      return <label className="flex items-center gap-2 rounded-md px-2 py-2 text-sm font-semibold hover:bg-sky/10" key={file.id}><input defaultChecked={checked} name="fichier" type="checkbox" value={file.id} /><span>{monthLabel(file.moisFichier, file.anneeFichier)} · {file.nomFichier} · {file.gestionnaire.nom}</span></label>;
+                    })}
+                  </div>
+                </div>
+                <div className="flex items-end lg:col-span-4">
+                  <button className="btn inline-flex w-full items-center justify-center gap-2"><Settings2 size={17} /> Appliquer</button>
+                </div>
+              </form>
+            </ModalForm>
             <a className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-black text-white" href={`/api/exports/doublons?${exportQuery}`}><FileDown className="inline" size={17} /> Export Excel doublons</a>
-            {singleFileReport ? <a className="rounded-lg bg-navy px-5 py-3 text-sm font-black text-white" href={singleFileReport}><Printer className="inline" size={17} /> Rapport PDF fichier</a> : <PrintReportButton />}
+            {singleFileReport ? <a className="rounded-lg bg-white px-5 py-3 text-sm font-black text-navy" href={singleFileReport}><Printer className="inline" size={17} /> Rapport PDF fichier</a> : <PrintReportButton />}
           </div>
-        </form>
+        </div>
+        <div className="grid grid-cols-1 gap-3 p-5 text-sm font-semibold text-slate-600 md:grid-cols-4">
+          <span><b className="text-navy">{selectedFiles.length}</b> fichier(s)</span>
+          <span><b className="text-navy">{branches.find((item) => item.id === params.filialeId)?.nom ?? "Toutes filiales"}</b></span>
+          <span><b className="text-navy">{managers.find((item) => item.id === params.gestionnaireId)?.nom ?? "Tous gestionnaires"}</b></span>
+          <span><b className="text-navy">{params.debutRaw || "Début"} → {params.finRaw || "Fin"}</b></span>
+        </div>
       </section>
 
       <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">

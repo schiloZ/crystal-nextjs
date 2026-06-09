@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { UserPlus } from "lucide-react";
+import { notifyToast } from "@/components/toaster";
 import { createManager, type ManagerFormState } from "./actions";
 
 type Company = { id: number; nom: string };
@@ -13,8 +14,12 @@ export function ManagerForm({ companies, showCompany }: { companies: Company[]; 
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state.success) formRef.current?.reset();
-  }, [state.success]);
+    if (state.success) {
+      formRef.current?.reset();
+      notifyToast("success", state.success);
+    }
+    if (state.error) notifyToast("error", state.error);
+  }, [state.error, state.success]);
 
   return (
     <form action={action} className="space-y-3 p-6" ref={formRef}>

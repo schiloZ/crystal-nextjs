@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { BriefcaseBusiness, CheckCircle2, Files, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ModalForm } from "@/components/modal-form";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { ManagerForm } from "./manager-form";
@@ -29,11 +30,20 @@ export default async function ManagersPage() {
         <Summary icon={<BriefcaseBusiness size={21} />} label="Compagnies" value={String(companies.length)} tone="violet" />
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_420px]">
+      <section className="mt-6">
         <div className="card overflow-hidden">
-          <div className="border-b border-line px-6 py-5"><h2 className="text-lg font-black text-navy">Liste des gestionnaires</h2><p className="text-xs font-semibold text-slate-500">Les gestionnaires actifs sont disponibles lors de l’import d’un fichier</p></div>
+          <div className="flex items-center justify-between gap-4 border-b border-line px-6 py-5">
+            <div><h2 className="text-lg font-black text-navy">Liste des gestionnaires</h2><p className="text-xs font-semibold text-slate-500">Les gestionnaires actifs sont disponibles lors de l’import d’un fichier</p></div>
+            <ModalForm
+              description="Ajouter une personne à attacher aux fichiers."
+              title="Nouveau gestionnaire"
+              trigger={<button className="rounded-md bg-emerald-600 px-4 py-2 text-xs font-black text-white">+ Nouveau gestionnaire</button>}
+            >
+              <ManagerForm companies={companies} showCompany={current.role === "super_admin"} />
+            </ModalForm>
+          </div>
           {managers.length === 0 ? <p className="p-10 text-center text-sm font-semibold text-slate-500">Aucun gestionnaire enregistré.</p> : <table className="table">
-            <thead><tr><th>Code</th><th>Gestionnaire</th><th>Compagnie</th><th>Coordonnées</th><th>Fichiers</th><th>Statut</th><th>Action</th></tr></thead>
+            <thead><tr><th>Code</th><th>Gestionnaire</th><th>Compagnie</th><th>Coordonnées</th><th>Fichiers</th><th>Statut</th><th>Actions</th></tr></thead>
             <tbody>{managers.map((manager, index) => <Fragment key={manager.id}>
               <tr className={index % 2 ? "bg-sky/10" : "bg-white"}>
                 <td className="font-mono font-black text-sky">{manager.code}</td>
@@ -42,12 +52,14 @@ export default async function ManagersPage() {
                 <td><span className="block">{manager.email ?? "-"}</span><span className="text-xs text-slate-500">{manager.telephone ?? "-"}</span></td>
                 <td className="font-black text-navy">{manager._count.fichiers}</td>
                 <td><span className={`badge ${manager.actif ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{manager.actif ? "Actif" : "Inactif"}</span></td>
-                <td><form action={toggleManager}><input name="id" type="hidden" value={manager.id} /><button className={`rounded-md px-3 py-2 text-xs font-black ${manager.actif ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>{manager.actif ? "Désactiver" : "Activer"}</button></form></td>
-              </tr>
-              <tr className="bg-slate-50">
-                <td colSpan={7}>
-                  <details className="rounded-lg border border-line bg-white">
-                    <summary className="cursor-pointer list-none px-4 py-3 text-sm font-black text-navy">Modifier {manager.prenoms} {manager.nom}</summary>
+                <td>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ModalForm
+                      description={`${manager.code} · ${companyNames.get(manager.compagnieId) ?? "Compagnie"}`}
+                      size="lg"
+                      title={`Modifier ${manager.prenoms ?? ""} ${manager.nom}`.trim()}
+                      trigger={<button className="rounded-md bg-sky/10 px-3 py-2 text-xs font-black text-sky">Modifier</button>}
+                    >
                     <form action={updateManager} className="grid gap-3 border-t border-line p-4 lg:grid-cols-3">
                       <input name="id" type="hidden" value={manager.id} />
                       {current.role === "super_admin" && <label><span className="mb-1 block text-xs font-black text-navy">Compagnie</span><select className="input" defaultValue={manager.compagnieId} name="compagnieId" required>{companies.map((company) => <option key={company.id} value={company.id}>{company.nom}</option>)}</select></label>}
@@ -59,16 +71,14 @@ export default async function ManagersPage() {
                       <Field defaultValue={manager.email ?? ""} label="Email" name="email" required={false} type="email" />
                       <div className="flex items-end"><button className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-black text-white">Enregistrer les modifications</button></div>
                     </form>
-                  </details>
+                    </ModalForm>
+                    <form action={toggleManager}><input name="id" type="hidden" value={manager.id} /><button className={`rounded-md px-3 py-2 text-xs font-black ${manager.actif ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>{manager.actif ? "Désactiver" : "Activer"}</button></form>
+                  </div>
                 </td>
               </tr>
             </Fragment>)}</tbody>
           </table>}
         </div>
-        <aside className="card h-fit overflow-hidden">
-          <div className="bg-navy px-6 py-5 text-white"><h2 className="text-lg font-black">Nouveau gestionnaire</h2><p className="text-xs font-semibold text-blue-100">Ajouter une personne à attacher aux fichiers</p></div>
-          <ManagerForm companies={companies} showCompany={current.role === "super_admin"} />
-        </aside>
       </section>
     </AppShell>
   );

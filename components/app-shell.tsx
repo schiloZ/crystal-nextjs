@@ -9,7 +9,7 @@ export async function AppShell({children,title,subtitle}:{children:React.ReactNo
 
   async function logout() {
     "use server";
-    await signOut({ redirectTo: "/login" });
+    await signOut({ redirectTo: "/login?toast=logout" });
   }
 
   return <div>

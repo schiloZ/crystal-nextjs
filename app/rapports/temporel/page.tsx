@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { AppShell } from "@/components/app-shell";
+import { ModalForm } from "@/components/modal-form";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -70,13 +71,17 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
   ];
 
   return <AppShell title="Contrôles temporels — R10" subtitle={`Audit / Rapports / Temporel / ${file.nomFichier}`}>
-    <form className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-line bg-white px-5 py-4 shadow-soft">
-      <label className="min-w-80 flex-1"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
-      <input name="type" type="hidden" value={selectedType} />
-      <button className="btn">Afficher le rapport</button>
+    <section className="mb-5 flex flex-wrap justify-end gap-3">
+      <ModalForm title="Filtres du rapport" trigger={<button className="btn">Filtres</button>}>
+        <form className="space-y-4 p-5">
+          <label className="block"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
+          <input name="type" type="hidden" value={selectedType} />
+          <button className="w-full rounded-lg bg-sky px-5 py-3 text-sm font-black text-white">Afficher le rapport</button>
+        </form>
+      </ModalForm>
       <a className="rounded-lg bg-navy px-5 py-3 text-sm font-black text-white" href={`/synthese?fichier=${file.id}`}>Voir la synthèse</a>
       <a className="rounded-lg bg-orange-600 px-5 py-3 text-sm font-black text-white" href={`/rapports/tardifs?fichier=${file.id}`}>Rapport tardifs</a>
-    </form>
+    </section>
 
     <section className="mb-5 rounded-lg bg-navy px-6 py-4 text-white">
       <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">{file.nomFichier}</h2><p className="mt-1 text-sm font-semibold text-blue-100">{file.compagnie.nom} · {file.filiale.nom} · Exercice {formatDate(file.exercice.dateDebut)} au {formatDate(file.exercice.dateFin)}</p></div><div className="text-right"><p className="text-2xl font-black">{formatNumber(totalTemporal)}</p><p className="text-xs font-bold uppercase text-blue-100">anomalies temporelles</p></div></div>

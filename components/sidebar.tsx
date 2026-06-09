@@ -10,6 +10,7 @@ export function Sidebar({ role, name, company, branch }: { role: string; name: s
   const pathname = usePathname();
   const initials = name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   const visibleNav = nav.filter((item) => !("roles" in item) || item.roles?.includes(role));
+  const visibleGroups = groups.filter((group) => visibleNav.some((item) => item.group === group));
 
   return <aside className="fixed left-0 top-0 h-screen w-64 bg-navy text-white flex flex-col shadow-2xl">
     <div className="p-5">
@@ -17,7 +18,7 @@ export function Sidebar({ role, name, company, branch }: { role: string; name: s
       <p className="mt-2 text-xs font-semibold text-blue-100">Audit Gestion Santé</p>
     </div>
     <nav className="flex-1 overflow-y-auto px-3 pb-3">
-      {groups.map(group => <div key={group} className="mb-4">
+      {visibleGroups.map(group => <div key={group} className="mb-4">
         <p className="px-3 pb-2 text-[10px] font-black tracking-widest text-sky">{group}</p>
         <div className="space-y-1">
           {visibleNav.filter(n => n.group === group).map(n => {

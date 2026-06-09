@@ -1,5 +1,6 @@
 import type { Gravite } from "@prisma/client";
 import { AppShell } from "@/components/app-shell";
+import { ModalForm } from "@/components/modal-form";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -76,12 +77,16 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
   const signature = simpleSignature(`${reference}:${user.id}:${netRecommended}:${anomalies.length}`);
 
   return <AppShell title="Recommandation de paiement — R15" subtitle={`Audit / ${file.gestionnaire.nom} / Rapport final`}>
-    <form className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-line bg-white px-5 py-4 shadow-soft">
-      <label className="min-w-80 flex-1"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
-      <button className="btn">Générer la recommandation</button>
+    <section className="mb-5 flex flex-wrap justify-end gap-3">
+      <ModalForm title="Choisir l'audit" trigger={<button className="btn">Filtres</button>}>
+        <form className="space-y-4 p-5">
+          <label className="block"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Audit à consulter</span><select className="input" defaultValue={file.id} name="fichier">{files.map((item) => <option key={item.id} value={item.id}>{item.nomFichier} · {item.filiale.nom} · {formatDate(item.dateImport)}</option>)}</select></label>
+          <button className="w-full rounded-lg bg-sky px-5 py-3 text-sm font-black text-white">Générer la recommandation</button>
+        </form>
+      </ModalForm>
       <a className="rounded-lg bg-navy px-5 py-3 text-sm font-black text-white" href={`/synthese?fichier=${file.id}`}>Voir la synthèse</a>
       <a className="rounded-lg bg-sky px-5 py-3 text-sm font-black text-white" href={`/rapport-complet?fichier=${file.id}`}>Rapport PDF complet</a>
-    </form>
+    </section>
 
     <section className="mb-5 rounded-lg bg-navy px-7 py-5 text-white">
       <h2 className="text-2xl font-black">RAPPORT FINAL DE RECOMMANDATION DE PAIEMENT</h2>

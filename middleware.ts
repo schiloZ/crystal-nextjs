@@ -8,6 +8,7 @@ export default auth((req) => {
   if (path.startsWith("/administration") && role !== "super_admin") return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   if (path.startsWith("/organisation") && !["super_admin", "admin_compagnie"].includes(role)) return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   if (path.startsWith("/exercices") && !["super_admin", "admin_compagnie"].includes(role)) return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+  if (path.startsWith("/historique") && !["super_admin", "admin_compagnie"].includes(role)) return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   if (path.startsWith("/gestionnaires") && !["super_admin", "admin_compagnie"].includes(role)) return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   if (path.startsWith("/utilisateurs") && !["super_admin", "admin_compagnie"].includes(role)) return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   return NextResponse.next();

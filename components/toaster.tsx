@@ -20,6 +20,7 @@ const toastMessages: Record<string, Toast> = {
   "manager-status": { id: 0, kind: "success", message: "Statut gestionnaire mis à jour." },
   "exercise-updated": { id: 0, kind: "success", message: "Exercice mis à jour avec succès." },
   "exercise-status": { id: 0, kind: "success", message: "Statut exercice mis à jour." },
+  "import-deleted": { id: 0, kind: "success", message: "Toutes les données du fichier importé ont été supprimées." },
 };
 
 export function Toaster() {

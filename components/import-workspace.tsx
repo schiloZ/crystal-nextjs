@@ -19,6 +19,7 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
+import { DeleteImportedFileButton } from "@/components/delete-imported-file-button";
 import { notifyToast } from "@/components/toaster";
 
 type RecentFile = {
@@ -1509,6 +1510,7 @@ function RecentImports({ files }: { files: RecentFile[] }) {
               <span className="badge bg-emerald-100 text-emerald-700">
                 {statusLabel(file.status)}
               </span>
+              <DeleteImportedFileButton fileId={file.id} fileName={file.name} />
             </div>
           ))}
         </div>

@@ -82,6 +82,19 @@ export async function POST(request: Request) {
 
     for (let index = 0; index < data.length; index += 500) await prisma.prestation.createMany({ data: data.slice(index, index + 500) });
     const audit = await runFileAudit(importedFile.id);
+    await prisma.historiqueImportation.create({
+      data: {
+        compagnieId: branch.compagnieId,
+        fichierImporteId: importedFile.id,
+        nomFichier: file.name,
+        action: "ajout",
+        utilisateurId: Number(user.id),
+        utilisateurNom: String(user.name || user.email || "Utilisateur"),
+        utilisateurEmail: String(user.email || ""),
+        nbLignesTotal: audit.prestations,
+        nbAnomalies: audit.lignesImpactees,
+      },
+    });
     return NextResponse.json({ fileId: importedFile.id, fileName: file.name, ...audit });
   } catch (error) {
     if (createdFileId) {

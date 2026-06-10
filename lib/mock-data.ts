@@ -21,6 +21,7 @@ export const nav = [
   {href:"/administration",label:"Admin CRYSTAL",icon:"CR",group:"ADMINISTRATION",color:"#ef4444",roles:["super_admin"]},
   {href:"/organisation",label:"Compagnies & filiales",icon:"OR",group:"ADMINISTRATION",color:"#10b981",roles:["super_admin","admin_compagnie"]},
   {href:"/exercices",label:"Exercices comptables",icon:"EX",group:"ADMINISTRATION",color:"#f59e0b",roles:["super_admin","admin_compagnie"]},
+  {href:"/historique",label:"Historique imports",icon:"HI",group:"ADMINISTRATION",color:"#64748b",roles:["super_admin","admin_compagnie"]},
   {href:"/gestionnaires",label:"Gestionnaires",icon:"GE",group:"ADMINISTRATION",color:"#0ea5e9",roles:["super_admin","admin_compagnie"]}
 ];
 export const riskRows = ["CLINIQUE ST-JEAN COCODY|487|18.2M FCFA|87/100|Critique","PHARMACIE DU PLATEAU|312|9.8M FCFA|74/100|Élevé","CHU ANGRE SPÉCIALITÉS|198|14.1M FCFA|68/100|Élevé","LABO BIOMEDICAL EXPRESS|267|5.3M FCFA|61/100|Élevé","CLINIQUE LES ACACIAS|143|7.9M FCFA|55/100|Moyen"].map((r,i)=>{const [p,a,m,s,st]=r.split('|'); return {code:['CL-0023','PH-0891','CL-0156','LA-0047','CL-0089'][i], prestataire:p, actes:a, montant:m, score:s, statut:st}});

@@ -1,14 +1,21 @@
+import { AuthError } from "next-auth";
+import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
 
 export default function Login() {
   async function action(formData: FormData) {
     "use server";
 
-    await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirectTo: "/dashboard?toast=login",
-    });
+    try {
+      await signIn("credentials", {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        redirectTo: "/dashboard?toast=login",
+      });
+    } catch (error) {
+      if (error instanceof AuthError) redirect("/login?toast=login-error");
+      throw error;
+    }
   }
 
   return (

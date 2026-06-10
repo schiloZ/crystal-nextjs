@@ -178,6 +178,23 @@ model FichierImporte {
   @@map("fichiers_importes")
 }
 
+model HistoriqueImportation {
+  id               Int      @id @default(autoincrement())
+  compagnieId      Int      @map("compagnie_id")
+  fichierImporteId Int?     @map("fichier_importe_id")
+  nomFichier       String   @map("nom_fichier") @db.VarChar(255)
+  action           String   @db.VarChar(30)
+  utilisateurId    Int?     @map("utilisateur_id")
+  utilisateurNom   String   @map("utilisateur_nom") @db.VarChar(200)
+  utilisateurEmail String   @map("utilisateur_email") @db.VarChar(150)
+  nbLignesTotal    Int      @default(0) @map("nb_lignes_total")
+  nbAnomalies      Int      @default(0) @map("nb_anomalies")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([compagnieId, createdAt], map: "idx_hist_import_compagnie_date")
+  @@map("historique_importations")
+}
+
 model Prestation {
   id                        BigInt         @id @default(autoincrement())
   fichierImporteId          Int            @map("fichier_importe_id")

@@ -3,17 +3,19 @@ import { prisma } from "@/lib/prisma";
 
 const monthNames = ["Jan", "Fev", "Mar", "Avr", "Mai", "Juin", "Juil", "Aout", "Sep", "Oct", "Nov", "Dec"];
 
-export async function getBiData(user: CurrentUser) {
+export async function getBiData(user: CurrentUser, requestedFileId?: number) {
   const scope = user.role === "super_admin" ? {} : { compagnieId: user.compagnieId };
   const files = await prisma.fichierImporte.findMany({
     where: scope,
     include: { compagnie: true, filiale: true, gestionnaire: true },
     orderBy: [{ anneeFichier: "desc" }, { moisFichier: "desc" }],
   });
-  const selectedYear = files[0]?.anneeFichier ?? new Date().getFullYear();
-  const yearFiles = files.filter((file) => file.anneeFichier === selectedYear);
+  const selectedFile = requestedFileId ? files.find((file) => file.id === requestedFileId) ?? null : null;
+  const selectedScopeFiles = selectedFile ? [selectedFile] : files;
+  const selectedYear = selectedFile?.anneeFichier ?? files[0]?.anneeFichier ?? new Date().getFullYear();
+  const yearFiles = selectedFile ? [selectedFile] : files.filter((file) => file.anneeFichier === selectedYear);
   const yearFileIds = yearFiles.map((file) => file.id);
-  const fileIds = files.map((file) => file.id);
+  const fileIds = selectedScopeFiles.map((file) => file.id);
   const anomalyWhere = { fichierImporteId: fileIds.length ? { in: fileIds } : { in: [-1] }, codeAnomalie: { not: "DOUBLON_STRICT" } };
   const yearAnomalyWhere = { fichierImporteId: yearFileIds.length ? { in: yearFileIds } : { in: [-1] }, codeAnomalie: { not: "DOUBLON_STRICT" } };
   const yearPrestationWhere = { fichierImporteId: yearFileIds.length ? { in: yearFileIds } : { in: [-1] } };
@@ -49,10 +51,10 @@ export async function getBiData(user: CurrentUser) {
     managerTotals.set(name, row);
   }
   const managers = [...managerTotals.values()].sort((a, b) => b.amount - a.amount);
-  const totalLines = files.reduce((sum, file) => sum + file.nbLignesTotal, 0);
-  const totalClaimed = files.reduce((sum, file) => sum + Number(file.montantTotalReclame), 0);
-  const totalRecommended = files.reduce((sum, file) => sum + Number(file.montantNetRecommande), 0);
-  const totalAnomalyLines = files.reduce((sum, file) => sum + file.nbLignesAnomalies, 0);
+  const totalLines = selectedScopeFiles.reduce((sum, file) => sum + file.nbLignesTotal, 0);
+  const totalClaimed = selectedScopeFiles.reduce((sum, file) => sum + Number(file.montantTotalReclame), 0);
+  const totalRecommended = selectedScopeFiles.reduce((sum, file) => sum + Number(file.montantNetRecommande), 0);
+  const totalAnomalyLines = selectedScopeFiles.reduce((sum, file) => sum + file.nbLignesAnomalies, 0);
   const yearTotalLines = yearFiles.reduce((sum, file) => sum + file.nbLignesTotal, 0);
   const yearClaimed = yearFiles.reduce((sum, file) => sum + Number(file.montantTotalReclame), 0);
   const yearRecommended = yearFiles.reduce((sum, file) => sum + Number(file.montantNetRecommande), 0);
@@ -61,8 +63,14 @@ export async function getBiData(user: CurrentUser) {
 
   return {
     selectedYear,
+    selectedFileId: selectedFile?.id ?? null,
+    selectedFileLabel: selectedFile ? `${selectedFile.nomFichier} - ${selectedFile.filiale.nom}` : "Tous les fichiers",
+    files: files.map((file) => ({
+      id: file.id,
+      label: `${file.nomFichier} - ${file.filiale.nom} - ${fullName(file.gestionnaire.prenoms, file.gestionnaire.nom)}`,
+    })),
     companyLabel: user.role === "super_admin" ? "Toutes compagnies" : user.compagnieNom,
-    fileCount: files.length,
+    fileCount: selectedScopeFiles.length,
     yearFileCount: yearFiles.length,
     totalLines,
     totalClaimed,

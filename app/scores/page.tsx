@@ -3,7 +3,7 @@ import { ModalForm } from "@/components/modal-form";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
-const pageSize = 50;
+const pageSize = 5;
 const modes = ["prestataires", "beneficiaires", "benford", "clustering"] as const;
 type Mode = (typeof modes)[number];
 type Entity = { key: string; name: string; lines: number; amount: number; anomalies: number; critical: number; weighted: number; impact: number; score: number; level: string };
@@ -96,11 +96,11 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
       {modes.map((item) => <a className={`rounded-md px-5 py-4 text-center text-sm font-black ${mode === item ? "bg-sky text-white" : "bg-white text-slate-500"}`} href={`/scores?fichier=${file.id}&vue=${item}&page=1`} key={item}>{modeLabel(item)}</a>)}
     </nav>
 
-    {(mode === "prestataires" || mode === "beneficiaires") && <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1.35fr_0.75fr]">
-      <section>
+    {(mode === "prestataires" || mode === "beneficiaires") && <div className="min-w-0 space-y-5">
+      <section className="min-w-0">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-black text-navy">Classement {mode === "prestataires" ? "des prestataires" : "des bénéficiaires"} par score de risque</h2><span className="badge bg-sky/10 text-sky">{formatNumber(activeEntities.length)} résultats · Page {currentPage}/{totalPages}</span></div>
         <div className="overflow-x-auto rounded-lg border border-line bg-white shadow-soft">
-          {activeEntities.length === 0 ? <p className="p-12 text-center text-sm font-semibold text-slate-500">Aucune entité exploitable pour cet audit.</p> : <table className="table"><thead><tr><th>Rang</th><th>Code / Matricule</th><th>{mode === "prestataires" ? "Prestataire" : "Bénéficiaire"}</th><th>Nb lignes</th><th>Anomalies</th><th>Montant</th><th>Impact</th><th>Score</th><th>Niveau</th></tr></thead><tbody>{rows.map((row, index) => <tr className={row.score >= 75 ? "bg-red-100/80" : row.score >= 50 ? "bg-yellow-100/80" : index % 2 ? "bg-sky/10" : "bg-white"} key={row.key}><td className="font-black text-navy">#{(currentPage - 1) * pageSize + index + 1}</td><td className="font-mono text-xs">{row.key}</td><td className="font-black text-navy">{row.name}</td><td>{formatNumber(row.lines)}</td><td className="font-black text-orange-600">{formatNumber(row.anomalies)}</td><td>{formatMoney(row.amount)}</td><td className="font-black text-red-600">{formatMoney(row.impact)}</td><td className="font-black text-navy">{row.score}/100</td><td className={riskClass(row.score)}>{row.level}</td></tr>)}</tbody></table>}
+          {activeEntities.length === 0 ? <p className="p-12 text-center text-sm font-semibold text-slate-500">Aucune entité exploitable pour cet audit.</p> : <table className="table min-w-[1080px]"><thead><tr><th>Rang</th><th>Code / Matricule</th><th>{mode === "prestataires" ? "Prestataire" : "Bénéficiaire"}</th><th>Nb lignes</th><th>Anomalies</th><th>Montant</th><th>Impact</th><th>Score</th><th>Niveau</th></tr></thead><tbody>{rows.map((row, index) => <tr className={row.score >= 75 ? "bg-red-100/80" : row.score >= 50 ? "bg-yellow-100/80" : index % 2 ? "bg-sky/10" : "bg-white"} key={row.key}><td className="font-black text-navy">#{(currentPage - 1) * pageSize + index + 1}</td><td className="font-mono text-xs">{row.key}</td><td className="max-w-[280px] truncate font-black text-navy" title={row.name}>{row.name}</td><td>{formatNumber(row.lines)}</td><td className="font-black text-orange-600">{formatNumber(row.anomalies)}</td><td>{formatMoney(row.amount)}</td><td className="font-black text-red-600">{formatMoney(row.impact)}</td><td className="font-black text-navy">{row.score}/100</td><td className={riskClass(row.score)}>{row.level}</td></tr>)}</tbody></table>}
         </div>
         {totalPages > 1 && <Pagination currentPage={currentPage} fileId={file.id} mode={mode} totalPages={totalPages}/>}
       </section>

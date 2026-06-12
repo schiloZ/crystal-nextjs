@@ -114,6 +114,7 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
           <button className="w-full rounded-lg bg-sky px-5 py-3 text-sm font-black text-white">Afficher le rapport</button>
         </form>
       </ModalForm>
+      <a className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-black text-white" href={`/api/exports/montants?fichier=${file.id}&type=${selectedType}`}>Exporter Excel</a>
       <a className="rounded-lg bg-navy px-5 py-3 text-sm font-black text-white" href={`/synthese?fichier=${file.id}`}>Voir la synthèse</a>
     </section>
 

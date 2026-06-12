@@ -49,7 +49,6 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
         </div>
         <div className="flex gap-3">
           <a className="rounded-lg bg-sky px-8 py-3 text-sm font-black text-white" href={`/rapport-complet?fichier=${file.id}`}>Export PDF</a>
-          <button className="rounded-lg bg-emerald-600 px-8 py-3 text-sm font-black text-white">Export Excel</button>
         </div>
       </div>
     </section>

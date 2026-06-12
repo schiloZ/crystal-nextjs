@@ -81,11 +81,11 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
       {metrics.map((item, index) => <MetricCard color={metricStyles[index][0]} item={item} key={item.code} line={metricStyles[index][1]}/>)}
     </section>
 
-    <section className="mt-7 grid grid-cols-1 items-start gap-5 xl:grid-cols-[1.45fr_0.75fr]">
-      <div>
+    <section className="mt-7 min-w-0 space-y-5">
+      <div className="min-w-0">
         <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-black text-navy">Fréquences anormales par bénéficiaire et acte</h2><span className="badge bg-sky/10 text-sky">{formatNumber(totalGroups)} résultats · Page {currentPage}/{totalPages}</span></div>
         <div className="overflow-x-auto rounded-lg border border-line bg-white shadow-soft">
-          {totalGroups === 0 ? <p className="p-12 text-center text-sm font-semibold text-emerald-700">Aucune fréquence anormale détectée pour cet audit.</p> : <table className="table">
+          {totalGroups === 0 ? <p className="p-12 text-center text-sm font-semibold text-emerald-700">Aucune fréquence anormale détectée pour cet audit.</p> : <table className="table min-w-[980px]">
             <thead><tr><th>Bénéficiaire</th><th>Assuré principal</th><th>Type anomalie</th><th>Nb actes</th><th>Code acte</th><th>Prestataire exemple</th><th>Montant cumulé</th><th>Gravité</th></tr></thead>
             <tbody>{rows.map(({ group, sample }) => <tr className={group._count.id >= 10 ? "bg-red-100/80" : "bg-yellow-100/80"} key={`${group.matriculeBeneficiaire}-${group.codeActe}`}>
               <td className="font-black text-navy">{sample?.nomBeneficiaire ?? group.matriculeBeneficiaire}</td>
@@ -102,10 +102,10 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
         {totalPages > 1 && <Pagination currentPage={currentPage} fileId={file.id} totalPages={totalPages} />}
       </div>
 
-      <aside className="card p-5">
+      <section className="card min-w-0 p-5">
         <h2 className="font-black text-navy">Actes les plus répétés</h2><p className="text-xs font-semibold text-slate-500">Occurrences dans les groupes suspects</p>
         {bars.length === 0 ? <p className="py-12 text-center text-sm text-slate-500">Aucune fréquence suspecte.</p> : <div className="mt-5 flex h-64 items-end justify-between gap-4">{bars.map(([label, value], index) => <div className="flex min-w-0 flex-1 flex-col items-center gap-2" key={label}><span className="text-xs font-black text-navy">{formatNumber(value)}</span><div className="w-full rounded-t-md" style={{ height: `${Math.max(8, (value / maxBar) * 190)}px`, backgroundColor: barColors[index] }}/><span className="w-full truncate text-center text-[10px] font-semibold text-slate-500" title={label}>{label}</span></div>)}</div>}
-      </aside>
+      </section>
     </section>
   </AppShell>;
 }

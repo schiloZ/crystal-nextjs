@@ -24,7 +24,7 @@ export function ModalForm({
       <span onClick={() => setOpen(true)}>{trigger}</span>
       {open && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-navy/55 px-4 py-8">
-          <div className={`max-h-[88vh] w-full ${width} overflow-hidden rounded-lg bg-white shadow-2xl`}>
+          <div className={`max-h-[88vh] w-full ${width} overflow-hidden rounded-lg bg-white text-slate-700 shadow-2xl`}>
             <div className="flex items-start justify-between gap-4 border-b border-line bg-navy px-6 py-4 text-white">
               <div>
                 <h2 className="text-lg font-black">{title}</h2>

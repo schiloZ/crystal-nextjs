@@ -4,7 +4,7 @@ import { ModalForm } from "@/components/modal-form";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
-const pageSize = 50;
+const pageSize = 5;
 const validTypes = ["TOUS", "DATE_SOINS_FUTURE", "HORS_EXERCICE", "ECART_DATE_EXCESSIF"] as const;
 type TemporalType = (typeof validTypes)[number];
 const barColors = ["#38bdf8", "#0ea5e9", "#818cf8", "#34d399", "#fb923c"];
@@ -101,7 +101,7 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
     <section className="mt-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-black text-navy">{typeDetails[selectedType].label}</h2><span className="badge bg-sky/10 text-sky">{formatNumber(totalRows)} résultats · Page {currentPage}/{totalPages}</span></div>
       <div className="overflow-x-auto rounded-lg border border-line bg-white shadow-soft">
-        {totalRows === 0 ? <p className="p-12 text-center text-sm font-semibold text-emerald-700">Aucune anomalie temporelle de ce type pour cet audit.</p> : <table className="table">
+        {totalRows === 0 ? <p className="p-12 text-center text-sm font-semibold text-emerald-700">Aucune anomalie temporelle de ce type pour cet audit.</p> : <table className="table min-w-[1100px]">
           <thead><tr><th>N° Prestation</th><th>Bénéficiaire</th><th>Assuré principal</th><th>Date soins</th><th>Date comptable</th><th>Écart</th><th>Type anomalie</th><th>Montant</th><th>Décision</th></tr></thead>
           <tbody>{anomalies.map((anomaly) => {
             const prestation = anomaly.prestation;

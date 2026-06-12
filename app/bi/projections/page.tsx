@@ -56,9 +56,21 @@ function ProjectionChart({ year, points, annualBudget }: { year: number; points:
   </section>
 }
 
-export default async function Page() {
+function fileQuery(fileId: number | null) {
+  return fileId ? `?fichier=${fileId}` : "";
+}
+
+function FileSelector({ files, selectedFileId }: { files: Array<{ id: number; label: string }>; selectedFileId: number | null }) {
+  return <form className="mb-5 flex flex-wrap items-end gap-3 rounded-lg bg-white px-5 py-4 shadow-soft">
+    <label className="min-w-80 flex-1"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Fichier à analyser</span><select className="input" defaultValue={selectedFileId ?? ""} name="fichier"><option value="">Tous les fichiers</option>{files.map((file) => <option key={file.id} value={file.id}>{file.label}</option>)}</select></label>
+    <button className="rounded-lg bg-sky px-5 py-3 text-sm font-black text-white">Analyser</button>
+  </form>
+}
+
+export default async function Page({ searchParams }: { searchParams?: { fichier?: string } }) {
   const user = await getCurrentUser();
-  const data = await getBiData(user);
+  const data = await getBiData(user, Number(searchParams?.fichier) || undefined);
+  const query = fileQuery(data.selectedFileId);
   const realMonths = data.monthly.filter((month) => month.amount > 0);
   const lastRealMonth = realMonths.at(-1)?.month ?? 0;
   const monthlyAverage = realMonths.length ? realMonths.reduce((sum, month) => sum + month.amount, 0) / realMonths.length : 0;
@@ -92,11 +104,12 @@ export default async function Page() {
 
   return <AppShell title="Projections et Previsions — BI-05" subtitle="BI & Analytics / Projections">
     <div className="mb-4 flex gap-2 text-sm font-black">
-      <Link href="/bi" className="rounded-md bg-white px-5 py-3 text-slate-500">Dashboard</Link>
-      <Link href="/bi/statistiques" className="rounded-md bg-white px-5 py-3 text-slate-500">Statistiques</Link>
-      <Link href="/bi/graphiques" className="rounded-md bg-white px-5 py-3 text-slate-500">Graphiques</Link>
-      <Link href="/bi/projections" className="rounded-md bg-sky px-5 py-3 text-white">Projections</Link>
+      <Link href={`/bi${query}`} className="rounded-md bg-white px-5 py-3 text-slate-500">Dashboard</Link>
+      <Link href={`/bi/statistiques${query}`} className="rounded-md bg-white px-5 py-3 text-slate-500">Statistiques</Link>
+      <Link href={`/bi/graphiques${query}`} className="rounded-md bg-white px-5 py-3 text-slate-500">Graphiques</Link>
+      <Link href={`/bi/projections${query}`} className="rounded-md bg-sky px-5 py-3 text-white">Projections</Link>
     </div>
+    <FileSelector files={data.files} selectedFileId={data.selectedFileId}/>
 
     <section className="mb-5 rounded-lg border-l-8 border-orange-500 bg-yellow-100 px-5 py-4">
       <h2 className="text-xl font-black text-orange-600">{gapPercent > 0 ? "ALERTE DEPASSEMENT PREVISIONNEL" : "SUIVI PREVISIONNEL MAITRISE"} — {data.companyLabel}</h2>

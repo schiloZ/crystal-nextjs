@@ -87,7 +87,7 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
         <h2 className="text-xl font-black text-orange-600">{formatNumber(totalRows)} PRESTATIONS TARDIVES — {mode === "exercice" ? `HORS EXERCICE [${formatDate(file.exercice.dateDebut)} → ${formatDate(file.exercice.dateFin)}]` : `HORS PÉRIODE DE TOLÉRANCE [${toleranceLabel(file.exercice.dateDebutToleranceTardif, file.exercice.dateFinToleranceTardif)}]`}</h2>
         <p className="mt-1 text-sm font-semibold text-slate-700">{file.nomFichier} · {file.filiale.nom} · {fullManagerName(file.gestionnaire.prenoms, file.gestionnaire.nom)}</p>
       </div>
-      <button className="rounded-lg bg-orange-600 px-8 py-3 text-sm font-black text-white">Exporter rapport</button>
+      <a className="rounded-lg bg-orange-600 px-8 py-3 text-sm font-black text-white" href={`/api/exports/tardifs?fichier=${file.id}&mode=${mode}`}>Exporter rapport</a>
       <div className="min-w-48 text-right"><p className="text-2xl font-black text-red-600">{formatMoney(total)}</p><p className="text-xs font-semibold text-slate-500">Montant total concerné</p></div>
     </section>
 

@@ -3,7 +3,7 @@ import { ModalForm } from "@/components/modal-form";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
-const pageSize = 50;
+const pageSize = 5;
 const kpiColors = ["#dc2626", "#dc2626", "#d97706", "#059669"];
 const barColors = ["#38bdf8", "#0ea5e9", "#818cf8", "#34d399", "#fb923c", "#f472b6"];
 
@@ -94,26 +94,26 @@ export default async function Page({ searchParams }: { searchParams?: { fichier?
       {kpis.map((item, index) => <KpiCard color={kpiColors[index]} item={item} key={item.icon}/>)}
     </div>
 
-    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1.45fr_0.75fr]">
-      <section>
-        <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-black text-navy">Prestataires avec anomalies</h2><span className="badge bg-sky/10 text-sky">{formatNumber(totalGroups)} résultats · Page {currentPage}/{totalPages}</span></div>
+    <div className="min-w-0 space-y-5">
+      <section className="min-w-0">
+        <div className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-black text-navy">Prestataires avec anomalies</h2><span className="badge bg-sky/10 text-sky">{formatNumber(totalGroups)} résultats · Page {currentPage}/{totalPages}</span></div>
         <div className="overflow-x-auto rounded-lg border border-line bg-white shadow-soft">
-          {totalGroups === 0 ? <p className="p-12 text-center text-sm font-semibold text-emerald-700">Aucune anomalie prestataire détectée pour cet audit.</p> : <table className="table">
+          {totalGroups === 0 ? <p className="p-12 text-center text-sm font-semibold text-emerald-700">Aucune anomalie prestataire détectée pour cet audit.</p> : <table className="table min-w-[920px]">
             <thead><tr><th>Code</th><th>Prestataire</th><th>Type anomalie</th><th>Nb lignes</th><th>Montant</th><th>Réseau</th><th>Gravité</th></tr></thead>
             <tbody>{rows.map((row) => {
               const critical = row.gravite === "critique";
               const agreed = row.status === "agree";
-              return <tr className={critical ? "bg-red-100/80" : "bg-sky/10"} key={row.code}><td className="font-mono text-xs font-bold text-navy">{row.code}</td><td className="font-black text-navy">{row.name}</td><td>{row.type}</td><td>{formatNumber(row.count)}</td><td className="font-black text-orange-600">{formatMoney(row.amount)}</td><td className={`font-black ${agreed ? "text-emerald-700" : "text-red-600"}`}>{row.status}</td><td className={`font-black ${critical ? "text-red-600" : "text-orange-600"}`}>{severityLabel(row.gravite)}</td></tr>;
+              return <tr className={critical ? "bg-red-100/80" : "bg-sky/10"} key={row.code}><td className="font-mono text-xs font-bold text-navy">{row.code}</td><td className="max-w-[260px] truncate font-black text-navy" title={row.name}>{row.name}</td><td className="max-w-[220px] truncate" title={row.type}>{row.type}</td><td>{formatNumber(row.count)}</td><td className="font-black text-orange-600">{formatMoney(row.amount)}</td><td className={`font-black ${agreed ? "text-emerald-700" : "text-red-600"}`}>{row.status}</td><td className={`font-black ${critical ? "text-red-600" : "text-orange-600"}`}>{severityLabel(row.gravite)}</td></tr>;
             })}</tbody>
           </table>}
         </div>
         {totalPages > 1 && <Pagination currentPage={currentPage} fileId={file.id} totalPages={totalPages} />}
       </section>
 
-      <aside className="card p-5">
+      <section className="card min-w-0 p-5">
         <h2 className="font-black text-navy">Top prestataires par volume</h2><p className="text-xs font-semibold text-slate-500">Toutes prestations du fichier</p>
         {volume.length === 0 ? <p className="py-12 text-center text-sm text-slate-500">Aucune donnée prestataire.</p> : <div className="mt-5 flex h-64 items-end justify-between gap-4">{volume.map((item, index) => <div className="flex min-w-0 flex-1 flex-col items-center gap-2" key={`${item.codePrestataire}-${index}`}><span className="text-xs font-black text-navy">{formatNumber(item._count.id)}</span><div className="w-full rounded-t-md" style={{ height: `${Math.max(8, (item._count.id / maxVolume) * 190)}px`, backgroundColor: barColors[index] }}/><span className="w-full truncate text-center text-[10px] font-semibold text-slate-500" title={item.prestataire ?? item.codePrestataire ?? ""}>{item.prestataire ?? item.codePrestataire}</span></div>)}</div>}
-      </aside>
+      </section>
     </div>
   </AppShell>;
 }

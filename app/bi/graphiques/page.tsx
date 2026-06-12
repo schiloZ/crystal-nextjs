@@ -28,8 +28,20 @@ function Heatmap({ rows, intensity }: { rows: string[]; intensity: number[] }) {
   </div>
 }
 
-export default async function Page() {
-  const data = await getBiData(await getCurrentUser());
+function fileQuery(fileId: number | null) {
+  return fileId ? `?fichier=${fileId}` : "";
+}
+
+function FileSelector({ files, selectedFileId }: { files: Array<{ id: number; label: string }>; selectedFileId: number | null }) {
+  return <form className="mb-5 flex flex-wrap items-end gap-3 rounded-lg bg-white px-5 py-4 shadow-soft">
+    <label className="min-w-80 flex-1"><span className="mb-1 block text-xs font-black uppercase text-slate-500">Fichier à analyser</span><select className="input" defaultValue={selectedFileId ?? ""} name="fichier"><option value="">Tous les fichiers</option>{files.map((file) => <option key={file.id} value={file.id}>{file.label}</option>)}</select></label>
+    <button className="rounded-lg bg-sky px-5 py-3 text-sm font-black text-white">Analyser</button>
+  </form>
+}
+
+export default async function Page({ searchParams }: { searchParams?: { fichier?: string } }) {
+  const data = await getBiData(await getCurrentUser(), Number(searchParams?.fichier) || undefined);
+  const query = fileQuery(data.selectedFileId);
   const monthlyAmounts = data.monthly.map((month) => ({ name: month.name, value: month.amountM }));
   const categories = data.categories.length ? data.categories.slice(0, 6).map((category) => ({ name: category.name, value: category.value })) : [{ name: "Aucune", value: 0 }];
   const monthlyRates = data.monthly.map((month) => ({ name: month.name, value: month.anomalyRate }));
@@ -38,11 +50,12 @@ export default async function Page() {
 
   return <AppShell title="Graphiques et Visualisations — BI-03" subtitle="BI & Analytics / Graphiques / Comparaisons">
     <div className="mb-4 flex gap-2 text-sm font-black">
-      <Link href="/bi" className="rounded-md bg-white px-5 py-3 text-slate-500">Dashboard</Link>
-      <Link href="/bi/statistiques" className="rounded-md bg-white px-5 py-3 text-slate-500">Statistiques</Link>
-      <Link href="/bi/graphiques" className="rounded-md bg-sky px-5 py-3 text-white">Graphiques</Link>
-      <Link href="/bi/projections" className="rounded-md bg-white px-5 py-3 text-slate-500">Projections</Link>
+      <Link href={`/bi${query}`} className="rounded-md bg-white px-5 py-3 text-slate-500">Dashboard</Link>
+      <Link href={`/bi/statistiques${query}`} className="rounded-md bg-white px-5 py-3 text-slate-500">Statistiques</Link>
+      <Link href={`/bi/graphiques${query}`} className="rounded-md bg-sky px-5 py-3 text-white">Graphiques</Link>
+      <Link href={`/bi/projections${query}`} className="rounded-md bg-white px-5 py-3 text-slate-500">Projections</Link>
     </div>
+    <FileSelector files={data.files} selectedFileId={data.selectedFileId}/>
     <div className="grid grid-cols-2 gap-3">
       <section className="card p-4">
         <h2 className="font-black text-navy">Evolution montants {data.selectedYear} (M FCFA)</h2>

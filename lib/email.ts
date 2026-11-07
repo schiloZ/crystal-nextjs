@@ -1,19 +1,26 @@
 /**
- * Envoi d'e-mails transactionnels par API HTTP (aucune dépendance).
+ * Envoi d'e-mails transactionnels.
  *
- * Fournisseur choisi selon les variables présentes :
+ * Fournisseur choisi selon les variables présentes (dans cet ordre) :
+ *   SMTP_USER + SMTP_PASS  SMTP, par défaut Gmail (smtp.gmail.com:465) avec un
+ *                   « mot de passe d'application » Google. SMTP_HOST / SMTP_PORT
+ *                   permettent un autre serveur.
  *   BREVO_API_KEY   Brevo (https://brevo.com) : fonctionne SANS nom de domaine,
  *                   avec une simple adresse expéditrice vérifiée (ex. un Gmail).
  *   RESEND_API_KEY  Resend (https://resend.com) : exige un domaine vérifié.
  *
  *   EMAIL_FROM      expéditeur, ex. "CRYSTAL <votre.adresse@gmail.com>"
- *                   (doit être l'adresse vérifiée chez le fournisseur)
+ *                   (facultatif en SMTP : "CRYSTAL <SMTP_USER>" par défaut)
  *
  * Sans fournisseur configuré, en développement, le contenu est affiché dans la console.
  */
 type Email = { to: string; subject: string; html: string; text: string };
 
 export async function sendEmail(email: Email): Promise<boolean> {
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  if (smtpUser && smtpPass) return sendWithSmtp(smtpUser, smtpPass, process.env.EMAIL_FROM || `CRYSTAL <${smtpUser}>`, email);
+
   const from = process.env.EMAIL_FROM;
   const brevoKey = process.env.BREVO_API_KEY;
   const resendKey = process.env.RESEND_API_KEY;
@@ -23,7 +30,7 @@ export async function sendEmail(email: Email): Promise<boolean> {
       console.info(`[email:dev] À : ${email.to}\nObjet : ${email.subject}\n${email.text}`);
       return true;
     }
-    console.error("[email] EMAIL_FROM et BREVO_API_KEY (ou RESEND_API_KEY) requis : e-mail non envoyé.");
+    console.error("[email] SMTP_USER/SMTP_PASS, ou EMAIL_FROM avec BREVO_API_KEY/RESEND_API_KEY, requis : e-mail non envoyé.");
     return false;
   }
 
@@ -36,6 +43,32 @@ export async function sendEmail(email: Email): Promise<boolean> {
     return true;
   } catch (error) {
     console.error("[email] Erreur réseau lors de l'envoi :", error instanceof Error ? error.message : error);
+    return false;
+  }
+}
+
+async function sendWithSmtp(user: string, pass: string, from: string, email: Email): Promise<boolean> {
+  const port = Number(process.env.SMTP_PORT || 465);
+  try {
+    // Chargé à la demande : la bibliothèque n'est utilisée que côté serveur, à l'envoi.
+    const { default: nodemailer } = await import("smtp-mailer");
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
+    });
+    const info = await transporter.sendMail({ from, to: email.to, subject: email.subject, text: email.text, html: email.html });
+    if (info.rejected.length) {
+      console.error(`[email] SMTP : destinataire refusé (${email.to}).`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("[email] Échec SMTP :", error instanceof Error ? error.message : error);
     return false;
   }
 }

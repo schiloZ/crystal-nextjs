@@ -12,8 +12,8 @@ export type ExerciseFormState = { error?: string; success?: string };
 const exerciseSchema = z.object({
   compagnieId: z.coerce.number().int().positive().optional(),
   codeExercice: z.string().trim().min(2, "Le code de l'exercice est requis.").max(20),
-  dateDebut: z.coerce.date({ invalid_type_error: "La date de début est invalide." }),
-  dateFin: z.coerce.date({ invalid_type_error: "La date de fin est invalide." }),
+  dateDebut: z.coerce.date({ error: "La date de début est invalide." }),
+  dateFin: z.coerce.date({ error: "La date de fin est invalide." }),
   dateDebutToleranceTardif: z.preprocess((value) => value === "" ? undefined : value, z.coerce.date().optional()),
   dateFinToleranceTardif: z.preprocess((value) => value === "" ? undefined : value, z.coerce.date().optional()),
   actif: z.string().optional(),

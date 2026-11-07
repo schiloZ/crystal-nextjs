@@ -5,7 +5,8 @@ import { getAuditSummary } from "@/lib/audit-summary";
 
 const kpiColors = ["#38bdf8", "#059669", "#dc2626", "#d97706", "#7c3aed", "#0284c7"];
 
-export default async function Page({ searchParams }: { searchParams?: { fichier?: string } }) {
+export default async function Page(props: { searchParams?: Promise<{ fichier?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   const data = await getAuditSummary(user, Number(searchParams?.fichier) || undefined);
   const file = data.selected;

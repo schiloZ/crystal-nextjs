@@ -21,6 +21,11 @@ const toastMessages: Record<string, Toast> = {
   "exercise-updated": { id: 0, kind: "success", message: "Exercice mis à jour avec succès." },
   "exercise-status": { id: 0, kind: "success", message: "Statut exercice mis à jour." },
   "import-deleted": { id: 0, kind: "success", message: "Toutes les données du fichier importé ont été supprimées." },
+  "company-access": { id: 0, kind: "success", message: "Accès de la compagnie mis à jour." },
+  "company-access-invalid": { id: 0, kind: "error", message: "Les paramètres d'accès sont invalides." },
+  "company-deleted": { id: 0, kind: "success", message: "La compagnie, ses utilisateurs et toutes ses données ont été supprimés." },
+  "company-delete-confirm": { id: 0, kind: "error", message: "Suppression annulée : le code saisi ne correspond pas à la compagnie." },
+  "company-delete-superadmin": { id: 0, kind: "error", message: "Suppression impossible : cette compagnie contient un compte super administrateur." },
 };
 
 export function Toaster() {

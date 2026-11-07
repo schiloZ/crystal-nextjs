@@ -1,6 +1,7 @@
 import { UserRole } from "@prisma/client";
 import { AppShell } from "@/components/app-shell";
 import { ModalForm } from "@/components/modal-form";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { createUser, toggleUserStatus, updateUser } from "./actions";
@@ -20,7 +21,8 @@ const roleOptions: Array<{ value: UserRole; label: string }> = [
   { value: "lecteur", label: "Lecteur" },
 ];
 
-export default async function Page({ searchParams }: { searchParams?: { q?: string } }) {
+export default async function Page(props: { searchParams?: Promise<{ q?: string }> }) {
+  const searchParams = await props.searchParams;
   const current = await requireRole(["super_admin", "admin_compagnie"]);
   const canManageUsers = current.role === "super_admin";
   const query = searchParams?.q?.trim() ?? "";
@@ -128,16 +130,19 @@ export default async function Page({ searchParams }: { searchParams?: { q?: stri
                         >
                           <UserForm action={updateUser} branches={branches} companies={companies} submitLabel="Enregistrer" user={user} />
                         </ModalForm>
-                        <form action={toggleUserStatus}>
-                          <input name="id" type="hidden" value={user.id} />
-                          <button
-                            className={`rounded-md px-3 py-2 text-xs font-black ${user.actif ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}
-                            disabled={user.id === current.id}
-                            title={user.id === current.id ? "Vous ne pouvez pas désactiver votre propre compte." : undefined}
-                          >
-                            {user.actif ? "Désactiver" : "Activer"}
-                          </button>
-                        </form>
+                        <ConfirmActionButton
+                          action={toggleUserStatus}
+                          buttonClassName={`rounded-md px-3 py-2 text-xs font-black ${user.actif ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}
+                          confirmLabel={user.actif ? "Désactiver le compte" : "Activer le compte"}
+                          disabled={user.id === current.id}
+                          disabledReason="Vous ne pouvez pas désactiver votre propre compte."
+                          hidden={{ id: user.id }}
+                          label={user.actif ? "Désactiver" : "Activer"}
+                          message={user.actif ? "L'utilisateur sera déconnecté immédiatement et ne pourra plus se connecter. Vous pourrez le réactiver à tout moment." : "L'utilisateur pourra de nouveau se connecter à CRYSTAL."}
+                          subject={`${user.prenoms ?? ""} ${user.nom} — ${user.email}`.trim()}
+                          title={user.actif ? "Désactiver cet utilisateur ?" : "Activer cet utilisateur ?"}
+                          tone={user.actif ? "danger" : "success"}
+                        />
                       </div>
                     </td>
                   )}
@@ -234,7 +239,7 @@ function UserForm({
           </label>
         )}
       </div>
-      <Field label={user ? "Nouveau mot de passe" : "Mot de passe initial"} name="password" placeholder={user ? "Laisser vide pour conserver" : "8 caractères minimum"} required={!user} type="password" />
+      <Field label={user ? "Nouveau mot de passe" : "Mot de passe initial"} name="password" placeholder={user ? "Laisser vide pour conserver" : "12 caractères min., lettres et chiffres"} required={!user} type="password" />
       <button className="w-full rounded-lg bg-emerald-600 py-3 text-sm font-black text-white">{submitLabel}</button>
     </form>
   );

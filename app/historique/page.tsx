@@ -2,7 +2,8 @@ import { AppShell } from "@/components/app-shell";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
-export default async function HistoriquePage({ searchParams }: { searchParams?: { action?: string } }) {
+export default async function HistoriquePage(props: { searchParams?: Promise<{ action?: string }> }) {
+  const searchParams = await props.searchParams;
   const current = await requireRole(["super_admin", "admin_compagnie"]);
   const action = actionParam(searchParams?.action);
   const scope = current.role === "super_admin" ? {} : { compagnieId: current.compagnieId };

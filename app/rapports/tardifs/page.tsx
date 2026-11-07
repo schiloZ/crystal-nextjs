@@ -6,7 +6,10 @@ import { prisma } from "@/lib/prisma";
 const kpiColors = ["#dc2626", "#d97706", "#0284c7", "#059669"];
 const pageSize = 50;
 
-export default async function Page({ searchParams }: { searchParams?: { fichier?: string; page?: string; mode?: string } }) {
+export default async function Page(
+  props: { searchParams?: Promise<{ fichier?: string; page?: string; mode?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   const scope = user.role === "super_admin" ? {} : { compagnieId: user.compagnieId };
   const files = await prisma.fichierImporte.findMany({

@@ -39,7 +39,8 @@ function FileSelector({ files, selectedFileId }: { files: Array<{ id: number; la
   </form>
 }
 
-export default async function Page({ searchParams }: { searchParams?: { fichier?: string } }) {
+export default async function Page(props: { searchParams?: Promise<{ fichier?: string }> }) {
+  const searchParams = await props.searchParams;
   const data = await getBiData(await getCurrentUser(), Number(searchParams?.fichier) || undefined);
   const query = fileQuery(data.selectedFileId);
   const monthlyAmounts = data.monthly.map((month) => ({ name: month.name, value: month.amountM }));

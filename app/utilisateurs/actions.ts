@@ -1,12 +1,12 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { UserRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { hashPassword, passwordSchema } from "@/lib/password";
 
 const userSchema = z.object({
   compagnieId: z.coerce.number().int().positive(),
@@ -14,13 +14,13 @@ const userSchema = z.object({
   prenoms: z.string().trim().max(150).optional(),
   nom: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(150),
-  password: z.string().min(8).max(100),
+  password: passwordSchema,
   role: z.enum(["admin_compagnie", "admin_filiale", "auditeur", "lecteur"]),
 });
 
 const updateUserSchema = userSchema.extend({
   id: z.coerce.number().int().positive(),
-  password: z.string().max(100).optional(),
+  password: z.union([z.literal(""), passwordSchema]).optional(),
   actif: z.enum(["true", "false"]).default("true"),
 });
 
@@ -37,7 +37,7 @@ export async function createUser(formData: FormData) {
       prenoms: values.prenoms || null,
       nom: values.nom,
       email: values.email,
-      motDePasse: await bcrypt.hash(values.password, 10),
+      motDePasse: await hashPassword(values.password),
       role: values.role as UserRole,
     },
   });
@@ -63,7 +63,7 @@ export async function updateUser(formData: FormData) {
       email: values.email,
       role: values.role as UserRole,
       actif: values.actif === "true",
-      ...(password ? { motDePasse: await bcrypt.hash(password, 10) } : {}),
+      ...(password ? { motDePasse: await hashPassword(password) } : {}),
     },
   });
 

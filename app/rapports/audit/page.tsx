@@ -20,7 +20,10 @@ const categoryLabels: Record<string, string> = {
   STATISTIQUE: "Statistique",
 };
 
-export default async function Page({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function Page(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   const params = parseParams(searchParams);
   const companyId = user.role === "super_admin" ? params.compagnieId : user.compagnieId;

@@ -10,7 +10,10 @@ type Entity = { key: string; name: string; lines: number; amount: number; anomal
 const severityWeight: Record<string, number> = { critique: 4, eleve: 3, moyen: 2, faible: 1 };
 const benfordExpected = [30.1, 17.6, 12.5, 9.7, 7.9, 6.7, 5.8, 5.1, 4.6];
 
-export default async function Page({ searchParams }: { searchParams?: { fichier?: string; page?: string; vue?: string } }) {
+export default async function Page(
+  props: { searchParams?: Promise<{ fichier?: string; page?: string; vue?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   const scope = user.role === "super_admin" ? {} : { compagnieId: user.compagnieId };
   const files = await prisma.fichierImporte.findMany({

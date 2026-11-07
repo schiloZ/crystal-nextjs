@@ -1,8 +1,12 @@
-import { AuthError } from "next-auth";
+import { AuthError, CredentialsSignin } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
+import { COMPANY_BLOCKED_MESSAGE } from "@/lib/company-access";
 
-export default function Login() {
+export default async function Login(props: { searchParams?: Promise<{ acces?: string }> }) {
+  const searchParams = await props.searchParams;
+  const companyBlocked = searchParams?.acces === "suspendu";
+
   async function action(formData: FormData) {
     "use server";
 
@@ -13,6 +17,7 @@ export default function Login() {
         redirectTo: "/dashboard?toast=login",
       });
     } catch (error) {
+      if (error instanceof CredentialsSignin && error.code === "compagnie_bloquee") redirect("/login?acces=suspendu");
       if (error instanceof AuthError) redirect("/login?toast=login-error");
       throw error;
     }
@@ -76,12 +81,19 @@ export default function Login() {
             Identifiants pour acceder a la plateforme
           </p>
 
+          {companyBlocked && (
+            <div className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">
+              {COMPANY_BLOCKED_MESSAGE}
+            </div>
+          )}
+
           <label className="text-xs font-bold text-[#09275a]">Email</label>
           <input
             name="email"
             type="email"
             placeholder="votre@email.com"
-            defaultValue="admin@crystal.ci"
+            required
+            autoComplete="username"
             className="mt-1 mb-6 w-full h-12 rounded-md border border-[#9edcff] bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-[#39b9f2]"
           />
 
@@ -92,7 +104,8 @@ export default function Login() {
             name="password"
             type="password"
             placeholder="••••••••••"
-            defaultValue="Crystal@2026"
+            required
+            autoComplete="current-password"
             className="mt-1 mb-3 w-full h-12 rounded-md border border-[#9edcff] bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-[#39b9f2]"
           />
 

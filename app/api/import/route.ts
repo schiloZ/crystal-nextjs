@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-import { auth } from "@/lib/auth";
+import { getApiUser, IMPORT_ROLES } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { runFileAudit } from "@/lib/run-file-audit";
 
@@ -23,9 +23,9 @@ const integerFields = new Set(["moisFichier"]);
 export async function POST(request: Request) {
   let createdFileId: number | null = null;
   try {
-    const session = await auth();
-    const user = session?.user as any;
-    if (!user?.id) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
+    const user = await getApiUser();
+    if (!user) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
+    if (!IMPORT_ROLES.includes(user.role)) return NextResponse.json({ error: "Votre rôle ne permet pas d'importer des fichiers." }, { status: 403 });
 
     const form = await request.formData();
     const file = form.get("file");

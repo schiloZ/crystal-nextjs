@@ -10,7 +10,10 @@ const kpiColors = ["#dc2626", "#dc2626", "#d97706", "#0284c7", "#7c3aed"];
 type MontantType = typeof validTypes[number];
 type DetailRow = { key: string; beneficiary: string; principal: string; codeActe: string; claimed: number; comparison: number; comparisonLabel: string; impact: number; ratio: number; severity: string; rowClass: string };
 
-export default async function Page({ searchParams }: { searchParams?: { fichier?: string; page?: string; type?: string } }) {
+export default async function Page(
+  props: { searchParams?: Promise<{ fichier?: string; page?: string; type?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   const scope = user.role === "super_admin" ? {} : { compagnieId: user.compagnieId };
   const files = await prisma.fichierImporte.findMany({

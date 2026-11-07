@@ -62,7 +62,7 @@ export default async function OrganisationPage() {
                 <form action={createOrganizationUser} className="space-y-3 p-5">
                   <div className="grid grid-cols-2 gap-3"><Field name="prenoms" label="Prénoms" placeholder="Ange Marie" /><Field name="nom" label="Nom" placeholder="KONAN" /></div>
                   <Field name="email" label="Email" placeholder="utilisateur@compagnie.ci" type="email" />
-                  <Field name="password" label="Mot de passe initial" placeholder="8 caractères minimum" type="password" />
+                  <Field name="password" label="Mot de passe initial" placeholder="12 caractères min., lettres et chiffres" type="password" />
                   <label className="block"><span className="text-xs font-black text-navy">Rôle</span><select className="input mt-1" name="role"><option value="admin_filiale">Administrateur filiale</option><option value="auditeur">Auditeur</option><option value="lecteur">Lecteur</option></select></label>
                   <label className="block"><span className="text-xs font-black text-navy">Filiale</span><select className="input mt-1" name="filialeId" required>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.compagnieNom} — {branch.nom}</option>)}</select></label>
                   <button className="w-full rounded-lg bg-emerald-600 py-3 font-black text-white">Créer le compte</button>

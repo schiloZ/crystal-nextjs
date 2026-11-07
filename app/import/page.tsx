@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/app-shell";
-import { getCurrentUser } from "@/lib/current-user";
+import { IMPORT_ROLES, requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { ImportWorkspace } from "@/components/import-workspace";
 
 export default async function Page() {
-  const user = await getCurrentUser();
+  const user = await requireRole(IMPORT_ROLES);
   const companyId = user.compagnieId;
   const [recentFiles, managers, branches, exercises] = await Promise.all([
     prisma.fichierImporte.findMany({

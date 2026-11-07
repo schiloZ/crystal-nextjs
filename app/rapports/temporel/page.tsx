@@ -16,7 +16,10 @@ const typeDetails: Record<TemporalType, { label: string; short: string }> = {
   ECART_DATE_EXCESSIF: { label: "Écarts de dates excessifs", short: "Écarts > 90 jours" },
 };
 
-export default async function Page({ searchParams }: { searchParams?: { fichier?: string; page?: string; type?: string } }) {
+export default async function Page(
+  props: { searchParams?: Promise<{ fichier?: string; page?: string; type?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   const scope = user.role === "super_admin" ? {} : { compagnieId: user.compagnieId };
   const files = await prisma.fichierImporte.findMany({

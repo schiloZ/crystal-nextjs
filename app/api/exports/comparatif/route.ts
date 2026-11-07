@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getApiUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 type AnnualStats = {
@@ -20,9 +20,8 @@ type BranchStats = AnnualStats & { branchId: number; branchName: string };
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const session = await auth();
-  const user = session?.user as any;
-  if (!user?.id) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
+  const user = await getApiUser();
+  if (!user) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
 
   const url = new URL(request.url);
   const requestedCompanyId = numberParam(url.searchParams.get("compagnie"));

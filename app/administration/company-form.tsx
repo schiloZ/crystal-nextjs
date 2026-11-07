@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { notifyToast } from "@/components/toaster";
 import { createCompany, type CompanyFormState } from "./actions";
 
 const initialState: CompanyFormState = {};
 
 export function CompanyForm() {
-  const [state, action] = useFormState(createCompany, initialState);
+  const [state, action] = useActionState(createCompany, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export function CompanyForm() {
           <Field name="adminNom" label="Nom" placeholder="KONAN" minLength={2} />
         </div>
         <Field name="adminEmail" label="Email" placeholder="admin@compagnie.ci" type="email" />
-        <Field name="adminPassword" label="Mot de passe initial" placeholder="8 caractères minimum" type="password" minLength={8} />
+        <Field name="adminPassword" label="Mot de passe initial" placeholder="12 caractères min., lettres et chiffres" type="password" minLength={12} />
       </div>
       <SubmitButton />
     </form>

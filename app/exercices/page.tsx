@@ -3,6 +3,7 @@ import { CalendarCheck, CalendarClock, Files, Landmark } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { DeleteImportedFileButton } from "@/components/delete-imported-file-button";
 import { ModalForm } from "@/components/modal-form";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { ExerciseForm } from "./exercise-form";
@@ -84,7 +85,19 @@ export default async function ExercisesPage() {
                 </td>
                 <td className="font-black text-navy">{exercise._count.fichiers}</td>
                 <td><span className={`badge ${exercise.actif ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{exercise.actif ? "Actif" : "Inactif"}</span></td>
-                <td><form action={toggleExercise}><input name="id" type="hidden" value={exercise.id} /><button className={`rounded-md px-3 py-2 text-xs font-black ${exercise.actif ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>{exercise.actif ? "Désactiver" : "Activer"}</button></form></td>
+                <td>
+                  <ConfirmActionButton
+                    action={toggleExercise}
+                    buttonClassName={`rounded-md px-3 py-2 text-xs font-black ${exercise.actif ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}
+                    confirmLabel={exercise.actif ? "Désactiver l'exercice" : "Activer l'exercice"}
+                    hidden={{ id: exercise.id }}
+                    label={exercise.actif ? "Désactiver" : "Activer"}
+                    message={exercise.actif ? "L'exercice ne sera plus proposé lors des nouveaux imports. Les fichiers déjà importés sont conservés." : "L'exercice sera de nouveau proposé lors des imports."}
+                    subject={`Exercice ${exercise.codeExercice}`}
+                    title={exercise.actif ? "Désactiver cet exercice ?" : "Activer cet exercice ?"}
+                    tone={exercise.actif ? "danger" : "success"}
+                  />
+                </td>
               </tr>
               <tr className="bg-slate-50">
                 <td colSpan={7}>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { CalendarPlus } from "lucide-react";
 import { notifyToast } from "@/components/toaster";
 import { createExercise, type ExerciseFormState } from "./actions";
@@ -10,7 +11,7 @@ type Company = { id: number; nom: string };
 const initialState: ExerciseFormState = {};
 
 export function ExerciseForm({ companies, showCompany }: { companies: Company[]; showCompany: boolean }) {
-  const [state, action] = useFormState(createExercise, initialState);
+  const [state, action] = useActionState(createExercise, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

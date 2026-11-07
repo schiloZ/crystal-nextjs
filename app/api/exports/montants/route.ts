@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-import { auth } from "@/lib/auth";
+import { getApiUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 const anomalyTypes = ["DEPASSEMENT_TARIF", "MONTANT_PAYE_SUPERIEUR", "MONTANT_NEGATIF"] as const;
@@ -22,9 +22,8 @@ type DetailRow = {
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const session = await auth();
-  const user = session?.user as any;
-  if (!user?.id) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
+  const user = await getApiUser();
+  if (!user) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
 
   const url = new URL(request.url);
   const fileId = numberParam(url.searchParams.get("fichier"));

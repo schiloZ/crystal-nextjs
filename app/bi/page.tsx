@@ -47,7 +47,8 @@ function FileSelector({ files, selectedFileId }: { files: Array<{ id: number; la
   </form>
 }
 
-export default async function Page({ searchParams }: { searchParams?: { fichier?: string } }) {
+export default async function Page(props: { searchParams?: Promise<{ fichier?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   const data = await getBiData(user, Number(searchParams?.fichier) || undefined);
   const filters = [

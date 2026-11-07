@@ -1,12 +1,12 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { UserRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { hashPassword, passwordSchema } from "@/lib/password";
 
 const branchSchema = z.object({
   code: z.string().trim().min(2).max(20).transform((value) => value.toUpperCase()),
@@ -19,7 +19,7 @@ const userSchema = z.object({
   nom: z.string().trim().min(2).max(100),
   prenoms: z.string().trim().min(2).max(150),
   email: z.string().trim().email().max(150),
-  password: z.string().min(8).max(100),
+  password: passwordSchema,
   role: z.enum(["admin_filiale", "auditeur", "lecteur"]),
   filialeId: z.coerce.number().int().positive().optional(),
 });
@@ -51,7 +51,7 @@ export async function createOrganizationUser(formData: FormData) {
       nom: values.nom,
       prenoms: values.prenoms,
       email: values.email,
-      motDePasse: await bcrypt.hash(values.password, 10),
+      motDePasse: await hashPassword(values.password),
       role: values.role as UserRole,
     },
   });

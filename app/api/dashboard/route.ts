@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getApiUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const session = await auth();
-    const user = session?.user as any;
-    if (!user?.id) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
+    const user = await getApiUser();
+    if (!user) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
     const scope = user.role === "super_admin" ? {} : { compagnieId: Number(user.compagnieId) };
     const files = await prisma.fichierImporte.findMany({ where: scope, select: { id: true } });
     const fileIds = files.map((file) => file.id);

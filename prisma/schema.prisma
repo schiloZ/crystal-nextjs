@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_ONLINE")
+  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
@@ -64,6 +64,8 @@ model Compagnie {
   telephone     String?          @db.VarChar(50)
   email         String?          @db.VarChar(100)
   actif         Boolean          @default(true)
+  /// Dernier jour d'accès inclus. Null = accès sans limite de durée.
+  dateFinEssai  DateTime?        @map("date_fin_essai") @db.Date
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
   filiales      Filiale[]

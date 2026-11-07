@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { UserPlus } from "lucide-react";
 import { notifyToast } from "@/components/toaster";
 import { createManager, type ManagerFormState } from "./actions";
@@ -10,7 +11,7 @@ type Company = { id: number; nom: string };
 const initialState: ManagerFormState = {};
 
 export function ManagerForm({ companies, showCompany }: { companies: Company[]; showCompany: boolean }) {
-  const [state, action] = useFormState(createManager, initialState);
+  const [state, action] = useActionState(createManager, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

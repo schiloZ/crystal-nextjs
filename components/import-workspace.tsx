@@ -1328,7 +1328,7 @@ function DropZone({
   inputRef,
   chooseFile,
 }: {
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   chooseFile: (file?: File) => void;
 }) {
   return (

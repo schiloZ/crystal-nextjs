@@ -30,7 +30,8 @@ function KpiCard({ icon, label, value, sub, color }: { icon: string; label: stri
   </article>;
 }
 
-export default async function Page({ searchParams }: { searchParams?: { annee?: string; mois?: string } }) {
+export default async function Page(props: { searchParams?: Promise<{ annee?: string; mois?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   const scope = user.role === "super_admin" ? {} : { compagnieId: user.compagnieId };
   const years = await prisma.fichierImporte.groupBy({ by: ["anneeFichier"], where: scope, orderBy: { anneeFichier: "desc" } });

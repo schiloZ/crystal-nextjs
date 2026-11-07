@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-import { auth } from "@/lib/auth";
+import { getApiUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 const duplicateCodes = ["DOUBLON_FONCTIONNEL", "DOUBLON_PARTIEL", "DOUBLON_INTER_MOIS", "DOUBLON_INTER_GESTIONNAIRE"];
@@ -20,9 +20,8 @@ const labels: Record<string, string> = {
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const session = await auth();
-  const user = session?.user as any;
-  if (!user?.id) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
+  const user = await getApiUser();
+  if (!user) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
 
   const url = new URL(request.url);
   const fileIds = numberList(url.searchParams.get("fichiers"));

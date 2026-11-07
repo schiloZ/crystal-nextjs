@@ -1,7 +1,7 @@
 export const kpis = [{label:"Lignes importées", value:"12 485", sub:"Fichier Janv."},{label:"Anomalies", value:"1 247", sub:"10.0% total"},{label:"Montant réclamé", value:"248.5 M", sub:"FCFA ce mois"},{label:"Mnt recommandé", value:"231.2 M", sub:"FCFA à payer"}];
 export const nav = [
   {href:"/dashboard",label:"Tableau de bord",icon:"DB",group:"RAPPORTS",color:"#38bdf8"},
-  {href:"/import",label:"Importer fichier",icon:"IM",group:"RAPPORTS",color:"#10b981"},
+  {href:"/import",label:"Importer fichier",icon:"IM",group:"RAPPORTS",color:"#10b981",roles:["super_admin","admin_compagnie","admin_filiale","auditeur"]},
   {href:"/synthese",label:"Synthèse audit",icon:"SY",group:"RAPPORTS",color:"#8b5cf6"},
   {href:"/rapports/audit",label:"Générer rapport",icon:"GR",group:"RAPPORTS",color:"#0898d0"},
   {href:"/rapports/comparatif",label:"Comparatif filiales",icon:"CF",group:"RAPPORTS",color:"#0ea5e9"},
@@ -16,6 +16,7 @@ export const nav = [
   {href:"/scores",label:"Scores risque",icon:"SC",group:"ANALYSE",color:"#8b5cf6"},
   {href:"/recommandation",label:"Recommandation",icon:"RE",group:"ANALYSE",color:"#22c55e"},
   {href:"/bi",label:"BI & Analytics",icon:"BI",group:"ANALYSE",color:"#38bdf8"},
+  {href:"/assistant-ai",label:"Assistant AI",icon:"AI",group:"ANALYSE",color:"#6366f1"},
   {href:"/parametres",label:"Paramètres",icon:"PA",group:"CONFIG.",color:"#94a3b8"},
   {href:"/utilisateurs",label:"Utilisateurs",icon:"US",group:"CONFIG.",color:"#0ea5e9",roles:["super_admin","admin_compagnie"]},
   {href:"/administration",label:"Admin CRYSTAL",icon:"CR",group:"ADMINISTRATION",color:"#ef4444",roles:["super_admin"]},

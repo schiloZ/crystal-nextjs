@@ -24,7 +24,8 @@ const codeLabels: Record<string, string> = {
 };
 const severityWeight: Record<Gravite, number> = { critique: 4, eleve: 3, moyen: 2, faible: 1 };
 
-export default async function Page({ searchParams }: { searchParams?: { fichier?: string } }) {
+export default async function Page(props: { searchParams?: Promise<{ fichier?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   const scope = user.role === "super_admin" ? {} : { compagnieId: user.compagnieId };
   const files = await prisma.fichierImporte.findMany({

@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { BriefcaseBusiness, CheckCircle2, Files, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { ModalForm } from "@/components/modal-form";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { ManagerForm } from "./manager-form";
@@ -72,7 +73,17 @@ export default async function ManagersPage() {
                       <div className="flex items-end"><button className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-black text-white">Enregistrer les modifications</button></div>
                     </form>
                     </ModalForm>
-                    <form action={toggleManager}><input name="id" type="hidden" value={manager.id} /><button className={`rounded-md px-3 py-2 text-xs font-black ${manager.actif ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>{manager.actif ? "Désactiver" : "Activer"}</button></form>
+                    <ConfirmActionButton
+                      action={toggleManager}
+                      buttonClassName={`rounded-md px-3 py-2 text-xs font-black ${manager.actif ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}
+                      confirmLabel={manager.actif ? "Désactiver le gestionnaire" : "Activer le gestionnaire"}
+                      hidden={{ id: manager.id }}
+                      label={manager.actif ? "Désactiver" : "Activer"}
+                      message={manager.actif ? "Le gestionnaire ne sera plus proposé lors des nouveaux imports. Les fichiers déjà importés sont conservés." : "Le gestionnaire sera de nouveau proposé lors des imports."}
+                      subject={`${manager.code} — ${manager.prenoms ?? ""} ${manager.nom}`.trim()}
+                      title={manager.actif ? "Désactiver ce gestionnaire ?" : "Activer ce gestionnaire ?"}
+                      tone={manager.actif ? "danger" : "success"}
+                    />
                   </div>
                 </td>
               </tr>

@@ -117,37 +117,52 @@ model Gestionnaire {
 }
 
 model ExerciceComptable {
-  id           Int              @id @default(autoincrement())
-  compagnieId  Int              @map("compagnie_id")
-  codeExercice String           @map("code_exercice") @db.VarChar(20)
-  dateDebut    DateTime         @map("date_debut") @db.Date
-  dateFin      DateTime         @map("date_fin") @db.Date
-  dateDebutToleranceTardif DateTime? @map("date_debut_tolerance_tardif") @db.Date
-  dateFinToleranceTardif   DateTime? @map("date_fin_tolerance_tardif") @db.Date
-  actif        Boolean          @default(true)
-  fichiers     FichierImporte[]
+  id                       Int              @id @default(autoincrement())
+  compagnieId              Int              @map("compagnie_id")
+  codeExercice             String           @map("code_exercice") @db.VarChar(20)
+  dateDebut                DateTime         @map("date_debut") @db.Date
+  dateFin                  DateTime         @map("date_fin") @db.Date
+  dateDebutToleranceTardif DateTime?        @map("date_debut_tolerance_tardif") @db.Date
+  dateFinToleranceTardif   DateTime?        @map("date_fin_tolerance_tardif") @db.Date
+  actif                    Boolean          @default(true)
+  fichiers                 FichierImporte[]
 
   @@map("exercices_comptables")
 }
 
 model Utilisateur {
-  id                Int       @id @default(autoincrement())
-  compagnieId       Int       @map("compagnie_id")
-  filialeId         Int?      @map("filiale_id")
-  nom               String    @db.VarChar(100)
-  prenoms           String?   @db.VarChar(150)
-  email             String    @unique @db.VarChar(150)
-  motDePasse        String    @map("mot_de_passe") @db.VarChar(255)
-  role              UserRole  @default(auditeur)
-  actif             Boolean   @default(true)
-  derniereConnexion DateTime? @map("derniere_connexion")
-  refreshToken      String?   @map("refresh_token") @db.Text
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  compagnie         Compagnie @relation(fields: [compagnieId], references: [id])
-  filiale           Filiale?  @relation(fields: [filialeId], references: [id])
+  id                Int                  @id @default(autoincrement())
+  compagnieId       Int                  @map("compagnie_id")
+  filialeId         Int?                 @map("filiale_id")
+  nom               String               @db.VarChar(100)
+  prenoms           String?              @db.VarChar(150)
+  email             String               @unique @db.VarChar(150)
+  motDePasse        String               @map("mot_de_passe") @db.VarChar(255)
+  role              UserRole             @default(auditeur)
+  actif             Boolean              @default(true)
+  derniereConnexion DateTime?            @map("derniere_connexion")
+  refreshToken      String?              @map("refresh_token") @db.Text
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+  compagnie         Compagnie            @relation(fields: [compagnieId], references: [id])
+  filiale           Filiale?             @relation(fields: [filialeId], references: [id])
+  resetTokens       PasswordResetToken[]
 
   @@map("utilisateurs")
+}
+
+/// Jeton de réinitialisation de mot de passe : seule l'empreinte SHA-256 est stockée.
+model PasswordResetToken {
+  id            Int         @id @default(autoincrement())
+  utilisateurId Int         @map("utilisateur_id")
+  tokenHash     String      @unique @map("token_hash") @db.Char(64)
+  expiresAt     DateTime    @map("expires_at")
+  usedAt        DateTime?   @map("used_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId])
+  @@map("password_reset_tokens")
 }
 
 model FichierImporte {
@@ -276,28 +291,28 @@ model Anomalie {
 }
 
 model RefAssure {
-  id                        Int       @id @default(autoincrement())
-  compagnieId               Int       @map("compagnie_id")
-  matricule                 String    @db.VarChar(50)
-  nom                       String    @db.VarChar(150)
-  prenom                    String?   @db.VarChar(150)
-  dateNaissance             DateTime? @map("date_naissance") @db.Date
-  sexe                      String?   @db.VarChar(10)
-  statut                    String?   @db.VarChar(50)
-  dateAffiliation           DateTime? @map("date_affiliation") @db.Date
-  dateRadiation             DateTime? @map("date_radiation") @db.Date
-  dateFinDroit              DateTime? @map("date_fin_droit") @db.Date
-  codeSouscripteur          String?   @map("code_souscripteur") @db.VarChar(50)
-  souscripteur              String?   @db.VarChar(200)
-  numeroGroupe              String?   @map("numero_groupe") @db.VarChar(50)
-  matriculeAssurePrincipal  String?   @map("matricule_assure_principal") @db.VarChar(50)
-  nomAssurePrincipal        String?   @map("nom_assure_principal") @db.VarChar(150)
-  prenomsAssurePrincipal    String?   @map("prenoms_assure_principal") @db.VarChar(150)
-  police                    String?   @db.VarChar(100)
-  policeInterne             String?   @map("police_interne") @db.VarChar(100)
-  numeroCollege             String?   @map("numero_college") @db.VarChar(50)
-  college                   String?   @db.VarChar(150)
-  actif                     Boolean   @default(true)
+  id                       Int       @id @default(autoincrement())
+  compagnieId              Int       @map("compagnie_id")
+  matricule                String    @db.VarChar(50)
+  nom                      String    @db.VarChar(150)
+  prenom                   String?   @db.VarChar(150)
+  dateNaissance            DateTime? @map("date_naissance") @db.Date
+  sexe                     String?   @db.VarChar(10)
+  statut                   String?   @db.VarChar(50)
+  dateAffiliation          DateTime? @map("date_affiliation") @db.Date
+  dateRadiation            DateTime? @map("date_radiation") @db.Date
+  dateFinDroit             DateTime? @map("date_fin_droit") @db.Date
+  codeSouscripteur         String?   @map("code_souscripteur") @db.VarChar(50)
+  souscripteur             String?   @db.VarChar(200)
+  numeroGroupe             String?   @map("numero_groupe") @db.VarChar(50)
+  matriculeAssurePrincipal String?   @map("matricule_assure_principal") @db.VarChar(50)
+  nomAssurePrincipal       String?   @map("nom_assure_principal") @db.VarChar(150)
+  prenomsAssurePrincipal   String?   @map("prenoms_assure_principal") @db.VarChar(150)
+  police                   String?   @db.VarChar(100)
+  policeInterne            String?   @map("police_interne") @db.VarChar(100)
+  numeroCollege            String?   @map("numero_college") @db.VarChar(50)
+  college                  String?   @db.VarChar(150)
+  actif                    Boolean   @default(true)
 
   @@unique([matricule, compagnieId])
   @@index([compagnieId, matricule, police, policeInterne, numeroCollege, codeSouscripteur], map: "idx_ref_assures_cle_prestation")
@@ -332,19 +347,19 @@ model RefActe {
 }
 
 model RefContrat {
-  id             Int       @id @default(autoincrement())
-  compagnieId    Int       @map("compagnie_id")
-  codeContrat    String    @map("code_contrat") @db.VarChar(50)
-  libelle        String    @db.VarChar(200)
-  police         String?   @db.VarChar(100)
-  policeInterne  String?   @map("police_interne") @db.VarChar(100)
-  codeSouscripteur String? @map("code_souscripteur") @db.VarChar(50)
-  souscripteur   String?   @db.VarChar(200)
-  dateDebut      DateTime? @map("date_debut") @db.Date
-  dateFin        DateTime? @map("date_fin") @db.Date
-  actif          Boolean   @default(true)
-  compagnie      Compagnie @relation(fields: [compagnieId], references: [id])
-  plafonds       RefPlafond[]
+  id               Int          @id @default(autoincrement())
+  compagnieId      Int          @map("compagnie_id")
+  codeContrat      String       @map("code_contrat") @db.VarChar(50)
+  libelle          String       @db.VarChar(200)
+  police           String?      @db.VarChar(100)
+  policeInterne    String?      @map("police_interne") @db.VarChar(100)
+  codeSouscripteur String?      @map("code_souscripteur") @db.VarChar(50)
+  souscripteur     String?      @db.VarChar(200)
+  dateDebut        DateTime?    @map("date_debut") @db.Date
+  dateFin          DateTime?    @map("date_fin") @db.Date
+  actif            Boolean      @default(true)
+  compagnie        Compagnie    @relation(fields: [compagnieId], references: [id])
+  plafonds         RefPlafond[]
 
   @@unique([codeContrat, compagnieId])
   @@index([compagnieId, police, policeInterne, codeSouscripteur], map: "idx_ref_contrats_perimetre")
@@ -352,21 +367,21 @@ model RefContrat {
 }
 
 model RefPlafond {
-  id              Int       @id @default(autoincrement())
-  compagnieId     Int       @map("compagnie_id")
-  contratId       Int?      @map("contrat_id")
-  codePlafond     String    @map("code_plafond") @db.VarChar(50)
-  libelle         String    @db.VarChar(200)
-  typePlafond     String    @map("type_plafond") @db.VarChar(50)
-  police          String?   @db.VarChar(100)
-  numeroCollege   String?   @map("numero_college") @db.VarChar(50)
-  codeActe        String?   @map("code_acte") @db.VarChar(50)
-  famille         String?   @db.VarChar(100)
-  montantPlafond  Decimal   @default(0) @map("montant_plafond") @db.Decimal(15, 2)
-  periodicite     String?   @db.VarChar(50)
-  actif           Boolean   @default(true)
-  compagnie       Compagnie @relation(fields: [compagnieId], references: [id])
-  contrat         RefContrat? @relation(fields: [contratId], references: [id])
+  id             Int         @id @default(autoincrement())
+  compagnieId    Int         @map("compagnie_id")
+  contratId      Int?        @map("contrat_id")
+  codePlafond    String      @map("code_plafond") @db.VarChar(50)
+  libelle        String      @db.VarChar(200)
+  typePlafond    String      @map("type_plafond") @db.VarChar(50)
+  police         String?     @db.VarChar(100)
+  numeroCollege  String?     @map("numero_college") @db.VarChar(50)
+  codeActe       String?     @map("code_acte") @db.VarChar(50)
+  famille        String?     @db.VarChar(100)
+  montantPlafond Decimal     @default(0) @map("montant_plafond") @db.Decimal(15, 2)
+  periodicite    String?     @db.VarChar(50)
+  actif          Boolean     @default(true)
+  compagnie      Compagnie   @relation(fields: [compagnieId], references: [id])
+  contrat        RefContrat? @relation(fields: [contratId], references: [id])
 
   @@unique([codePlafond, compagnieId])
   @@index([compagnieId, police, numeroCollege, codeActe, famille], map: "idx_ref_plafonds_regle")

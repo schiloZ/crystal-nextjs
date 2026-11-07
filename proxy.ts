@@ -1,10 +1,13 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
+
+// Pages accessibles sans être connecté.
+const PUBLIC_PATHS = ["/login", "/mot-de-passe-oublie", "/reinitialiser-mot-de-passe"];
 export default auth((req) => {
   const logged = !!req.auth;
   const path = req.nextUrl.pathname;
   const role = (req.auth?.user as any)?.role;
-  if (!logged && path !== "/login") return NextResponse.redirect(new URL("/login", req.nextUrl));
+  if (!logged && !PUBLIC_PATHS.includes(path)) return NextResponse.redirect(new URL("/login", req.nextUrl));
   if (path.startsWith("/administration") && role !== "super_admin") return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   if (path.startsWith("/organisation") && !["super_admin", "admin_compagnie"].includes(role)) return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   if (path.startsWith("/exercices") && !["super_admin", "admin_compagnie"].includes(role)) return NextResponse.redirect(new URL("/dashboard", req.nextUrl));

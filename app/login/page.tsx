@@ -117,8 +117,8 @@ export default async function Login(props: { searchParams?: Promise<{ acces?: st
               Se souvenir de moi
             </label>
 
-            <a href="#" className="font-bold text-[#008bd2]">
-              Mot de passe oublie ?
+            <a href="/mot-de-passe-oublie" className="font-bold text-[#008bd2]">
+              Mot de passe oublié ?
             </a>
           </div>
 
@@ -126,18 +126,7 @@ export default async function Login(props: { searchParams?: Promise<{ acces?: st
             SE CONNECTER&nbsp; →
           </button>
 
-          <div className="my-6 flex items-center gap-3 text-xs text-slate-500">
-            <div className="h-px flex-1 bg-[#bde8ff]" />
-            ou
-            <div className="h-px flex-1 bg-[#bde8ff]" />
-          </div>
-
-          <button
-            type="button"
-            className="h-12 w-full rounded-md border border-[#9edcff] bg-white text-[#09275a]"
-          >
-            Connexion SSO Entreprise
-          </button>
+          {/* Connexion SSO Entreprise : masquée tant qu'elle n'est pas branchée. */}
         </form>
 
         <p className="absolute bottom-8 text-xs text-slate-500">

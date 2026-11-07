@@ -1,36 +1,36 @@
 /**
- * Envoi d'e-mails transactionnels via l'API HTTP de Resend (https://resend.com).
+ * Envoi d'e-mails transactionnels par API HTTP (aucune dépendance).
  *
- * Variables d'environnement :
- *   RESEND_API_KEY  clé API Resend
- *   EMAIL_FROM      expéditeur, ex. "CRYSTAL <no-reply@votre-domaine.ci>"
- *                   (le domaine doit être vérifié dans Resend)
+ * Fournisseur choisi selon les variables présentes :
+ *   BREVO_API_KEY   Brevo (https://brevo.com) : fonctionne SANS nom de domaine,
+ *                   avec une simple adresse expéditrice vérifiée (ex. un Gmail).
+ *   RESEND_API_KEY  Resend (https://resend.com) : exige un domaine vérifié.
  *
- * Sans clé, en développement, le contenu est affiché dans la console du serveur.
+ *   EMAIL_FROM      expéditeur, ex. "CRYSTAL <votre.adresse@gmail.com>"
+ *                   (doit être l'adresse vérifiée chez le fournisseur)
+ *
+ * Sans fournisseur configuré, en développement, le contenu est affiché dans la console.
  */
 type Email = { to: string; subject: string; html: string; text: string };
 
 export async function sendEmail(email: Email): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
+  const brevoKey = process.env.BREVO_API_KEY;
+  const resendKey = process.env.RESEND_API_KEY;
 
-  if (!apiKey || !from) {
+  if (!from || (!brevoKey && !resendKey)) {
     if (process.env.NODE_ENV !== "production") {
       console.info(`[email:dev] À : ${email.to}\nObjet : ${email.subject}\n${email.text}`);
       return true;
     }
-    console.error("[email] RESEND_API_KEY ou EMAIL_FROM manquant : e-mail non envoyé.");
+    console.error("[email] EMAIL_FROM et BREVO_API_KEY (ou RESEND_API_KEY) requis : e-mail non envoyé.");
     return false;
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [email.to], subject: email.subject, html: email.html, text: email.text }),
-    });
+    const response = brevoKey ? await sendWithBrevo(brevoKey, from, email) : await sendWithResend(resendKey!, from, email);
     if (!response.ok) {
-      console.error(`[email] Échec Resend (HTTP ${response.status}) : ${(await response.text()).slice(0, 300)}`);
+      console.error(`[email] Échec ${brevoKey ? "Brevo" : "Resend"} (HTTP ${response.status}) : ${(await response.text()).slice(0, 300)}`);
       return false;
     }
     return true;
@@ -38,6 +38,37 @@ export async function sendEmail(email: Email): Promise<boolean> {
     console.error("[email] Erreur réseau lors de l'envoi :", error instanceof Error ? error.message : error);
     return false;
   }
+}
+
+function sendWithBrevo(apiKey: string, from: string, email: Email) {
+  const sender = parseAddress(from);
+  return fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: { "api-key": apiKey, "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      sender: sender.name ? { name: sender.name, email: sender.email } : { email: sender.email },
+      to: [{ email: email.to }],
+      subject: email.subject,
+      htmlContent: email.html,
+      textContent: email.text,
+    }),
+  });
+}
+
+function sendWithResend(apiKey: string, from: string, email: Email) {
+  return fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: [email.to], subject: email.subject, html: email.html, text: email.text }),
+  });
+}
+
+/** "CRYSTAL <a@b.c>" -> { name: "CRYSTAL", email: "a@b.c" } ; "a@b.c" -> { email: "a@b.c" } */
+export function parseAddress(value: string): { name?: string; email: string } {
+  const match = value.match(/^\s*(.*?)\s*<\s*([^>]+?)\s*>\s*$/);
+  if (!match) return { email: value.trim() };
+  const name = match[1].replace(/^"|"$/g, "").trim();
+  return name ? { name, email: match[2] } : { email: match[2] };
 }
 
 /**

@@ -2,6 +2,7 @@ import { AuthError, CredentialsSignin } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
 import { COMPANY_BLOCKED_MESSAGE } from "@/lib/company-access";
+import { PasswordInput } from "@/components/password-input";
 
 export default async function Login(props: { searchParams?: Promise<{ acces?: string }> }) {
   const searchParams = await props.searchParams;
@@ -100,14 +101,15 @@ export default async function Login(props: { searchParams?: Promise<{ acces?: st
           <label className="text-xs font-bold text-[#09275a]">
             Mot de passe
           </label>
-          <input
-            name="password"
-            type="password"
-            placeholder="••••••••••"
-            required
-            autoComplete="current-password"
-            className="mt-1 mb-3 w-full h-12 rounded-md border border-[#9edcff] bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-[#39b9f2]"
-          />
+          <div className="mt-1 mb-3">
+            <PasswordInput
+              autoComplete="current-password"
+              className="w-full h-12 rounded-md border border-[#9edcff] bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-[#39b9f2]"
+              name="password"
+              placeholder="••••••••••"
+              required
+            />
+          </div>
 
           <div className="mb-3 flex items-center justify-between text-xs">
             <label className="flex items-center gap-2 text-slate-600">

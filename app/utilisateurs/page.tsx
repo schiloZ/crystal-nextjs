@@ -5,6 +5,7 @@ import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { createUser, toggleUserStatus, updateUser } from "./actions";
+import { PasswordInput } from "@/components/password-input";
 
 const roleLabels: Record<UserRole, string> = {
   super_admin: "Administrateur CRYSTAL",
@@ -246,6 +247,7 @@ function UserForm({
 }
 
 function Field({ defaultValue, label, name, placeholder, required = true, type = "text" }: { defaultValue?: string; label: string; name: string; placeholder?: string; required?: boolean; type?: string }) {
+  if (type === "password") return <label className="block"><span className="text-xs font-black text-navy">{label}</span><div className="mt-1"><PasswordInput autoComplete="new-password" className="input" name={name} placeholder={placeholder} required={required} /></div></label>;
   return <label className="block"><span className="text-xs font-black text-navy">{label}</span><input className="input mt-1" defaultValue={defaultValue} name={name} placeholder={placeholder} required={required} type={type} /></label>;
 }
 

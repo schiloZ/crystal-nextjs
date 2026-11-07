@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { notifyToast } from "@/components/toaster";
 import { createCompany, type CompanyFormState } from "./actions";
+import { PasswordInput } from "@/components/password-input";
 
 const initialState: CompanyFormState = {};
 
@@ -45,6 +46,7 @@ export function CompanyForm() {
 }
 
 function Field({ name, label, placeholder, type = "text", minLength, required = true }: { name: string; label: string; placeholder: string; type?: string; minLength?: number; required?: boolean }) {
+  if (type === "password") return <label className="block"><span className="text-xs font-black text-navy">{label}</span><div className="mt-1"><PasswordInput autoComplete="new-password" className="input" minLength={minLength} name={name} placeholder={placeholder} required={required} /></div></label>;
   return <label className="block"><span className="text-xs font-black text-navy">{label}</span><input className="input mt-1" minLength={minLength} name={name} placeholder={placeholder} required={required} type={type} /></label>;
 }
 

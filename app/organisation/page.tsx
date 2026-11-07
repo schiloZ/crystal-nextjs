@@ -3,6 +3,7 @@ import { ModalForm } from "@/components/modal-form";
 import { requireRole } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { createBranch, createOrganizationUser } from "./actions";
+import { PasswordInput } from "@/components/password-input";
 
 export default async function OrganisationPage() {
   const current = await requireRole(["super_admin", "admin_compagnie"]);
@@ -81,6 +82,7 @@ export default async function OrganisationPage() {
 }
 
 function Field({ name, label, placeholder, type = "text" }: { name: string; label: string; placeholder: string; type?: string }) {
+  if (type === "password") return <label className="block"><span className="text-xs font-black text-navy">{label}</span><div className="mt-1"><PasswordInput autoComplete="new-password" className="input" name={name} placeholder={placeholder} required /></div></label>;
   return <label className="block"><span className="text-xs font-black text-navy">{label}</span><input className="input mt-1" name={name} placeholder={placeholder} required={name !== "ville" && name !== "email"} type={type} /></label>;
 }
 
